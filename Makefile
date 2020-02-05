@@ -1,3 +1,5 @@
+IMAGE=airadier/image-scan-webhook
+
 all:
 	go build ./...
 
@@ -8,4 +10,7 @@ run:
 	./webhook --tls-cert-file cert.crt --tls-private-key-file cert.key
 
 docker:
-	docker build -t airadier/image-scan-webhook -f build/Dockerfile .
+	docker build -t ${IMAGE} -f build/Dockerfile .
+
+push: 
+	docker push ${IMAGE}

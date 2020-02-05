@@ -108,8 +108,13 @@ func main() {
 	http.HandleFunc("/pods", servePods)
 
 	server := &http.Server{
-		Addr:      ":443",
+		Addr:      fmt.Sprintf(":%d", config.Port),
 		TLSConfig: configTLS(config),
 	}
-	server.ListenAndServeTLS("", "")
+	klog.Infof("Starting. Listening on port %s...", server.Addr)
+	err := server.ListenAndServeTLS("", "")
+	if err != nil {
+		panic(err)
+	}
+	klog.Info("Exiting...")
 }

@@ -22,6 +22,7 @@ import (
 
 // Config contains the server (the webhook) cert and key.
 type Config struct {
+	Port     int
 	CertFile string
 	KeyFile  string
 }
@@ -32,6 +33,7 @@ func (c *Config) addFlags() {
 		"after server cert).")
 	flag.StringVar(&c.KeyFile, "tls-private-key-file", c.KeyFile, ""+
 		"File containing the default x509 private key matching --tls-cert-file.")
+	flag.IntVar(&c.Port, "port", 8443, "Webhook listening port")
 }
 
 func configTLS(config Config) *tls.Config {
