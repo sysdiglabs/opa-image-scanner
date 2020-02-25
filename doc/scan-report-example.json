@@ -1,0 +1,2099 @@
+[
+    {
+        "sha256:89a42c3ba15f09a3fbe39856bddacdf9e94cd03df7403cad4fc105088e268fc9": {
+            "docker.io/nginx:1.17.7": [
+                {
+                    "detail": {
+                        "policy": {
+                            "blacklisted_images": [],
+                            "comment": "Default Sysdig policy bundle for new customers.",
+                            "id": "default",
+                            "mappings": [
+                                {
+                                    "id": "mapping_1XRMgBkSl3mg6ILV69QcLGLEFv3",
+                                    "image": {
+                                        "type": "tag",
+                                        "value": "*"
+                                    },
+                                    "name": "",
+                                    "policy_ids": [
+                                        "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq"
+                                    ],
+                                    "registry": "*",
+                                    "repository": "localbuild/sysdigworkshop/airadier",
+                                    "whitelist_ids": []
+                                },
+                                {
+                                    "id": "mapping_1XRKftholqnYk1up2HPUl6UncMS",
+                                    "image": {
+                                        "type": "tag",
+                                        "value": "*"
+                                    },
+                                    "name": "",
+                                    "policy_ids": [
+                                        "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq"
+                                    ],
+                                    "registry": "*",
+                                    "repository": "sysdigworkshop/airadier",
+                                    "whitelist_ids": []
+                                },
+                                {
+                                    "id": "mapping_1W5GPj7zBQpCAHpWxvUorqxb1lU",
+                                    "image": {
+                                        "type": "tag",
+                                        "value": "*"
+                                    },
+                                    "name": "",
+                                    "policy_ids": [
+                                        "policy_1W5GKstTSCuBgma8kcZa7dHPLnX"
+                                    ],
+                                    "registry": "*",
+                                    "repository": "localbuild/test/*",
+                                    "whitelist_ids": []
+                                },
+                                {
+                                    "id": "mapping_1CI5tw3zxNL9b344sSsXBfth3dW",
+                                    "image": {
+                                        "type": "tag",
+                                        "value": "*"
+                                    },
+                                    "name": "default",
+                                    "policy_ids": [
+                                        "default"
+                                    ],
+                                    "registry": "*",
+                                    "repository": "*",
+                                    "whitelist_ids": [
+                                        "global"
+                                    ]
+                                }
+                            ],
+                            "name": "Default Sysdig policy bundle",
+                            "policies": [
+                                {
+                                    "comment": "System default policy",
+                                    "id": "default",
+                                    "name": "DefaultPolicy",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FlJOnK9qdRSRcTNrfz3IUZXbou",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "HEALTHCHECK"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx2yR2myVxaaXMp5zleEUpKd",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "USER"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1FlKixNbbwnsUx8pJtX5xV8uboG",
+                                            "params": [
+                                                {
+                                                    "name": "max_days_since_sync",
+                                                    "value": "7"
+                                                }
+                                            ],
+                                            "trigger": "stale_feed_data"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1FlKnkFbIN3fSvl71lHIxBXgh2s",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "name": "severity_comparison",
+                                                    "value": "\u003e="
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                },
+                                                {
+                                                    "name": "fix_available",
+                                                    "value": "true"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "secret_scans",
+                                            "id": "rule_1Ezo0nDiqv0I1wxZPl4MK0RLEAZ",
+                                            "params": [
+                                                {
+                                                    "name": "content_regex_name",
+                                                    "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_checks"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "passwd_file",
+                                            "id": "rule_1GB4xfQVikoJt0nKyAeUVJwYZYh",
+                                            "params": [],
+                                            "trigger": "content_not_available"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1GB4xhDsvBbDT96h95bjxtONQS2",
+                                            "params": [],
+                                            "trigger": "suid_or_guid_set"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GB4zh3sQYTEnQpa4EcYl34SZYN",
+                                            "params": [
+                                                {
+                                                    "name": "ports",
+                                                    "value": "22"
+                                                },
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                }
+                                            ],
+                                            "trigger": "exposed_ports"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "comment": "This policy provides out of the box rules around Dockerfile best practices.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                    "id": "dockerfile_best_practices",
+                                    "name": "Default Configuration Policy - Dockerfile Best Practices",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1FlKixNbbwnsUx8pJtX5xV8pboG",
+                                            "params": [
+                                                {
+                                                    "name": "max_days_since_sync",
+                                                    "value": "7"
+                                                }
+                                            ],
+                                            "trigger": "stale_feed_data"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx5doYKki82uxNWvrdc1zs8O",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "RUN"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "like"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": ".*apt-get upgrade.*"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1G7q8iETgn96DM2ol2fa7V25GdI",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "RUN"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "like"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": ".*yum upgrade.*"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx5Brg2RNEAbOoW0mxTLCNjr",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "HEALTHCHECK"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx9O6XGOnz18bInRu9VPSaej",
+                                            "params": [
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                },
+                                                {
+                                                    "name": "users",
+                                                    "value": "root"
+                                                }
+                                            ],
+                                            "trigger": "effective_user"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx7op3c4lcSutHSevUDEAFmI",
+                                            "params": [
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                },
+                                                {
+                                                    "name": "ports",
+                                                    "value": "22"
+                                                }
+                                            ],
+                                            "trigger": "exposed_ports"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx33SpKwPliPFh74GdlojO3b",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "LABEL"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "="
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": "latest"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCUUvkHJ9qmIRjlLcafaAOTXGa",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "ENV"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "like"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": ".*(password|PASSWORD|passwd|PASSWD|AWS|secret|SECRET).*"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx2yR2myVxaaXMp5zleEUsKd",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "USER"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx2yR2myVxaaXMp5zleEUsKd",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "ADD"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "comment": "This policy interprets NIST 800-190 controls and provides out of the box rules to detect image misconfiguration.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                    "id": "nist_800-190",
+                                    "name": "Default Audit Policy - NIST 800-190",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1FlKixNbbwnsUx8pXtX5xV8pboG",
+                                            "params": [
+                                                {
+                                                    "name": "max_days_since_sync",
+                                                    "value": "7"
+                                                }
+                                            ],
+                                            "trigger": "stale_feed_data"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "npms",
+                                            "id": "rule_1GCOgC9QQulSxT9lLOcSKFl2STV",
+                                            "params": [],
+                                            "trigger": "unknown_in_feeds"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1GCOg9G4MaGKY8nHvqJ8tQ4ZCIf",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "non-os"
+                                                },
+                                                {
+                                                    "name": "severity_comparison",
+                                                    "value": "\u003e="
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1GCMueaFWaigiXsU2mBjHn4CSc2",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "os"
+                                                },
+                                                {
+                                                    "name": "severity_comparison",
+                                                    "value": "\u003e="
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCMucV3SGGfEJljBxKH1fLmzOd",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "USER"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCNbqqMC7iEEr7wsKPiugNhlOc",
+                                            "params": [
+                                                {
+                                                    "name": "ports",
+                                                    "value": "22"
+                                                },
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                }
+                                            ],
+                                            "trigger": "exposed_ports"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "secret_scans",
+                                            "id": "rule_1GCNbpQw4L5QQ3XSc3Od3amcaAQ",
+                                            "params": [
+                                                {
+                                                    "name": "content_regex_name",
+                                                    "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_checks"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCNxYBmHUAs7ApbCP3r2fFkGZI",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "ENV"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "like"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": ".*(password|PASSWORD|passwd|PASSWD|AWS|secret|SECRET).*"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCOgAvqdpL7yQ7oF5CzyTuCiMa",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "HEALTHCHECK"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "ruby_gems",
+                                            "id": "rule_1GCOoz0dZJuCUoWGUorE5QJRbbT",
+                                            "params": [],
+                                            "trigger": "not_found_in_feed"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "metadata",
+                                            "id": "rule_1GCUV04MF8xH42qTPsYfS1H0UXa",
+                                            "params": [
+                                                {
+                                                    "name": "attribute",
+                                                    "value": "like_distro"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_in"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": "alpine, busybox, centos, ubuntu, debian, fedora, ol"
+                                                }
+                                            ],
+                                            "trigger": "attribute"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCUUwMjZsOKhH1R0y4Jfis9bAk",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "ADD"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GCUV2SJhuwNnhFdZI1BZ45FF5i",
+                                            "params": [
+                                                {
+                                                    "name": "users",
+                                                    "value": "root"
+                                                },
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                }
+                                            ],
+                                            "trigger": "effective_user"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1GCUUvkHJ9qmIRjlLcafaAOTvGa",
+                                            "params": [],
+                                            "trigger": "suid_or_guid_set"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "comment": "This policy interprets PCI controls and provides out of the box rules to detect image misconfiguration.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                    "id": "pci",
+                                    "name": "Default Audit Policy - PCI",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1FlKixNbbNwnsUx8pXX5xV8pboG",
+                                            "params": [
+                                                {
+                                                    "name": "max_days_since_sync",
+                                                    "value": "7"
+                                                }
+                                            ],
+                                            "trigger": "stale_feed_data"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1GQfcID4qEqVofO7X131FjMeMyV",
+                                            "params": [
+                                                {
+                                                    "name": "regex_name",
+                                                    "value": ".*(admin|ADMIN|password|PASSWORD).*"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_match"
+                                        },
+                                        {
+                                            "action": "STOP",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1GQg23r1pCuRWIx7vQ5TxRIJ7uS",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "name": "severity_comparison",
+                                                    "value": "\u003e="
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                },
+                                                {
+                                                    "name": "fix_available",
+                                                    "value": "true"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "secret_scans",
+                                            "id": "rule_1GQgwOAxA3NM1haWLTOiVqfmvsA",
+                                            "params": [
+                                                {
+                                                    "name": "content_regex_name",
+                                                    "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_checks"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1GQgwIBLieRQXkw6IFn2fEMgjMg",
+                                            "params": [],
+                                            "trigger": "suid_or_guid_set"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1FwAx9O6XGOnz18bInRu9VPSaej",
+                                            "params": [
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                },
+                                                {
+                                                    "name": "users",
+                                                    "value": "root"
+                                                }
+                                            ],
+                                            "trigger": "effective_user"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1GQgwJ32rk96G4wRsgbzNYy2vGN",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "USER"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "id": "policy_1VOK65VBwmYuzNbBeS1x0ri1FLS",
+                                    "name": "Default Audit Policy - PCI (copy)",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1VOK68ZJMqggx9QxMcNQlffHCyb",
+                                            "params": [
+                                                {
+                                                    "name": "max_days_since_sync",
+                                                    "value": "7"
+                                                }
+                                            ],
+                                            "trigger": "stale_feed_data"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1VOK61rqXFbyg8N0rg1igDbOXxK",
+                                            "params": [
+                                                {
+                                                    "name": "regex_name",
+                                                    "value": ".*(admin|ADMIN|password|PASSWORD).*"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_match"
+                                        },
+                                        {
+                                            "action": "STOP",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1VOK65NkFGLEohvmttQS8KFRDqu",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "all"
+                                                },
+                                                {
+                                                    "name": "severity_comparison",
+                                                    "value": "\u003e="
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                },
+                                                {
+                                                    "name": "fix_available",
+                                                    "value": "true"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "secret_scans",
+                                            "id": "rule_1VOK63KPR5Eo3axCDRWX9v48Aoi",
+                                            "params": [
+                                                {
+                                                    "name": "content_regex_name",
+                                                    "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_checks"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1VOK66WWJwbDNzOVizb8z2f60kT",
+                                            "params": [],
+                                            "trigger": "suid_or_guid_set"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1VOK64OE4BEG7vFW3TwxCJNvCNi",
+                                            "params": [
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                },
+                                                {
+                                                    "name": "users",
+                                                    "value": "root"
+                                                }
+                                            ],
+                                            "trigger": "effective_user"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1VOK67LqESrEyFVlHLgUtZ1a8wi",
+                                            "params": [
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "USER"
+                                                },
+                                                {
+                                                    "name": "check",
+                                                    "value": "not_exists"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "id": "policy_1W5GKstTSCuBgma8kcZa7dHPLnX",
+                                    "name": "Inline Scan Policy",
+                                    "rules": [
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1W5GKt5KTSjcw6Ny8UvAZDHy3Q6",
+                                            "params": [
+                                                {
+                                                    "name": "ports",
+                                                    "value": "22"
+                                                },
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                }
+                                            ],
+                                            "trigger": "exposed_ports"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                },
+                                {
+                                    "comment": "Policy to checkl several things during the SKO trauinig",
+                                    "id": "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq",
+                                    "name": "SKO Training policy",
+                                    "rules": [
+                                        {
+                                            "action": "STOP",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1XRK5HDtTLJ9FBGbYfpl2fk8Uuv",
+                                            "params": [
+                                                {
+                                                    "name": "type",
+                                                    "value": "blacklist"
+                                                },
+                                                {
+                                                    "name": "users",
+                                                    "value": "root"
+                                                }
+                                            ],
+                                            "trigger": "effective_user"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "secret_scans",
+                                            "id": "rule_1XRK5EYvETF3CeCPW0aV9hLrmr9",
+                                            "params": [
+                                                {
+                                                    "name": "content_regex_name",
+                                                    "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                }
+                                            ],
+                                            "trigger": "content_regex_checks"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "vulnerabilities",
+                                            "id": "rule_1XRK5E9tLb1BEoNfqTIOwj8XRrQ",
+                                            "params": [
+                                                {
+                                                    "name": "package_type",
+                                                    "value": "non-os"
+                                                },
+                                                {
+                                                    "name": "severity",
+                                                    "value": "high"
+                                                }
+                                            ],
+                                            "trigger": "package"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "packages",
+                                            "id": "rule_1XRK5IZ9JQ1jXAAchHwbWuXBjCq",
+                                            "params": [
+                                                {
+                                                    "name": "name",
+                                                    "value": "jeilyfish"
+                                                }
+                                            ],
+                                            "trigger": "blacklist"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "dockerfile",
+                                            "id": "rule_1XRK5C7cxM7FzsqLVDEzMpju5vj",
+                                            "params": [
+                                                {
+                                                    "name": "check",
+                                                    "value": "like"
+                                                },
+                                                {
+                                                    "name": "instruction",
+                                                    "value": "RUN"
+                                                },
+                                                {
+                                                    "name": "value",
+                                                    "value": ".*jeIlyfish.*"
+                                                }
+                                            ],
+                                            "trigger": "instruction"
+                                        },
+                                        {
+                                            "action": "WARN",
+                                            "gate": "files",
+                                            "id": "rule_1XRK5CGafx1q4QFEom4GtfSf3Ao",
+                                            "params": [
+                                                {
+                                                    "name": "regex",
+                                                    "value": "jeIlyfish\\/_jellyfish\\.py"
+                                                }
+                                            ],
+                                            "trigger": "name_match"
+                                        }
+                                    ],
+                                    "version": "1_0"
+                                }
+                            ],
+                            "version": "1_0",
+                            "whitelisted_images": [],
+                            "whitelists": [
+                                {
+                                    "comment": "Default global whitelist",
+                                    "id": "global",
+                                    "items": [],
+                                    "name": "Global Whitelist",
+                                    "version": "1_0"
+                                }
+                            ]
+                        },
+                        "result": {
+                            "bundle": {
+                                "blacklisted_images": [],
+                                "comment": "Default Sysdig policy bundle for new customers.",
+                                "id": "default",
+                                "mappings": [
+                                    {
+                                        "id": "mapping_1XRMgBkSl3mg6ILV69QcLGLEFv3",
+                                        "image": {
+                                            "type": "tag",
+                                            "value": "*"
+                                        },
+                                        "name": "",
+                                        "policy_ids": [
+                                            "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq"
+                                        ],
+                                        "registry": "*",
+                                        "repository": "localbuild/sysdigworkshop/airadier",
+                                        "whitelist_ids": []
+                                    },
+                                    {
+                                        "id": "mapping_1XRKftholqnYk1up2HPUl6UncMS",
+                                        "image": {
+                                            "type": "tag",
+                                            "value": "*"
+                                        },
+                                        "name": "",
+                                        "policy_ids": [
+                                            "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq"
+                                        ],
+                                        "registry": "*",
+                                        "repository": "sysdigworkshop/airadier",
+                                        "whitelist_ids": []
+                                    },
+                                    {
+                                        "id": "mapping_1W5GPj7zBQpCAHpWxvUorqxb1lU",
+                                        "image": {
+                                            "type": "tag",
+                                            "value": "*"
+                                        },
+                                        "name": "",
+                                        "policy_ids": [
+                                            "policy_1W5GKstTSCuBgma8kcZa7dHPLnX"
+                                        ],
+                                        "registry": "*",
+                                        "repository": "localbuild/test/*",
+                                        "whitelist_ids": []
+                                    },
+                                    {
+                                        "id": "mapping_1CI5tw3zxNL9b344sSsXBfth3dW",
+                                        "image": {
+                                            "type": "tag",
+                                            "value": "*"
+                                        },
+                                        "name": "default",
+                                        "policy_ids": [
+                                            "default"
+                                        ],
+                                        "registry": "*",
+                                        "repository": "*",
+                                        "whitelist_ids": [
+                                            "global"
+                                        ]
+                                    }
+                                ],
+                                "name": "Default Sysdig policy bundle",
+                                "policies": [
+                                    {
+                                        "comment": "System default policy",
+                                        "id": "default",
+                                        "name": "DefaultPolicy",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FlJOnK9qdRSRcTNrfz3IUZXbou",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "HEALTHCHECK"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx2yR2myVxaaXMp5zleEUpKd",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "USER"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1FlKixNbbwnsUx8pJtX5xV8uboG",
+                                                "params": [
+                                                    {
+                                                        "name": "max_days_since_sync",
+                                                        "value": "7"
+                                                    }
+                                                ],
+                                                "trigger": "stale_feed_data"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1FlKnkFbIN3fSvl71lHIxBXgh2s",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "all"
+                                                    },
+                                                    {
+                                                        "name": "severity_comparison",
+                                                        "value": "\u003e="
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    },
+                                                    {
+                                                        "name": "fix_available",
+                                                        "value": "true"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "secret_scans",
+                                                "id": "rule_1Ezo0nDiqv0I1wxZPl4MK0RLEAZ",
+                                                "params": [
+                                                    {
+                                                        "name": "content_regex_name",
+                                                        "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_checks"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "passwd_file",
+                                                "id": "rule_1GB4xfQVikoJt0nKyAeUVJwYZYh",
+                                                "params": [],
+                                                "trigger": "content_not_available"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1GB4xhDsvBbDT96h95bjxtONQS2",
+                                                "params": [],
+                                                "trigger": "suid_or_guid_set"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GB4zh3sQYTEnQpa4EcYl34SZYN",
+                                                "params": [
+                                                    {
+                                                        "name": "ports",
+                                                        "value": "22"
+                                                    },
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    }
+                                                ],
+                                                "trigger": "exposed_ports"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "comment": "This policy provides out of the box rules around Dockerfile best practices.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                        "id": "dockerfile_best_practices",
+                                        "name": "Default Configuration Policy - Dockerfile Best Practices",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1FlKixNbbwnsUx8pJtX5xV8pboG",
+                                                "params": [
+                                                    {
+                                                        "name": "max_days_since_sync",
+                                                        "value": "7"
+                                                    }
+                                                ],
+                                                "trigger": "stale_feed_data"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx5doYKki82uxNWvrdc1zs8O",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "RUN"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "like"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": ".*apt-get upgrade.*"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1G7q8iETgn96DM2ol2fa7V25GdI",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "RUN"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "like"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": ".*yum upgrade.*"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx5Brg2RNEAbOoW0mxTLCNjr",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "HEALTHCHECK"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx9O6XGOnz18bInRu9VPSaej",
+                                                "params": [
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    },
+                                                    {
+                                                        "name": "users",
+                                                        "value": "root"
+                                                    }
+                                                ],
+                                                "trigger": "effective_user"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx7op3c4lcSutHSevUDEAFmI",
+                                                "params": [
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    },
+                                                    {
+                                                        "name": "ports",
+                                                        "value": "22"
+                                                    }
+                                                ],
+                                                "trigger": "exposed_ports"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx33SpKwPliPFh74GdlojO3b",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "LABEL"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "="
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": "latest"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCUUvkHJ9qmIRjlLcafaAOTXGa",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "ENV"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "like"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": ".*(password|PASSWORD|passwd|PASSWD|AWS|secret|SECRET).*"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx2yR2myVxaaXMp5zleEUsKd",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "USER"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx2yR2myVxaaXMp5zleEUsKd",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "ADD"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "comment": "This policy interprets NIST 800-190 controls and provides out of the box rules to detect image misconfiguration.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                        "id": "nist_800-190",
+                                        "name": "Default Audit Policy - NIST 800-190",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1FlKixNbbwnsUx8pXtX5xV8pboG",
+                                                "params": [
+                                                    {
+                                                        "name": "max_days_since_sync",
+                                                        "value": "7"
+                                                    }
+                                                ],
+                                                "trigger": "stale_feed_data"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "npms",
+                                                "id": "rule_1GCOgC9QQulSxT9lLOcSKFl2STV",
+                                                "params": [],
+                                                "trigger": "unknown_in_feeds"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1GCOg9G4MaGKY8nHvqJ8tQ4ZCIf",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "non-os"
+                                                    },
+                                                    {
+                                                        "name": "severity_comparison",
+                                                        "value": "\u003e="
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1GCMueaFWaigiXsU2mBjHn4CSc2",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "os"
+                                                    },
+                                                    {
+                                                        "name": "severity_comparison",
+                                                        "value": "\u003e="
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCMucV3SGGfEJljBxKH1fLmzOd",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "USER"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCNbqqMC7iEEr7wsKPiugNhlOc",
+                                                "params": [
+                                                    {
+                                                        "name": "ports",
+                                                        "value": "22"
+                                                    },
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    }
+                                                ],
+                                                "trigger": "exposed_ports"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "secret_scans",
+                                                "id": "rule_1GCNbpQw4L5QQ3XSc3Od3amcaAQ",
+                                                "params": [
+                                                    {
+                                                        "name": "content_regex_name",
+                                                        "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_checks"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCNxYBmHUAs7ApbCP3r2fFkGZI",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "ENV"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "like"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": ".*(password|PASSWORD|passwd|PASSWD|AWS|secret|SECRET).*"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCOgAvqdpL7yQ7oF5CzyTuCiMa",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "HEALTHCHECK"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "ruby_gems",
+                                                "id": "rule_1GCOoz0dZJuCUoWGUorE5QJRbbT",
+                                                "params": [],
+                                                "trigger": "not_found_in_feed"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "metadata",
+                                                "id": "rule_1GCUV04MF8xH42qTPsYfS1H0UXa",
+                                                "params": [
+                                                    {
+                                                        "name": "attribute",
+                                                        "value": "like_distro"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_in"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": "alpine, busybox, centos, ubuntu, debian, fedora, ol"
+                                                    }
+                                                ],
+                                                "trigger": "attribute"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCUUwMjZsOKhH1R0y4Jfis9bAk",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "ADD"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GCUV2SJhuwNnhFdZI1BZ45FF5i",
+                                                "params": [
+                                                    {
+                                                        "name": "users",
+                                                        "value": "root"
+                                                    },
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    }
+                                                ],
+                                                "trigger": "effective_user"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1GCUUvkHJ9qmIRjlLcafaAOTvGa",
+                                                "params": [],
+                                                "trigger": "suid_or_guid_set"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "comment": "This policy interprets PCI controls and provides out of the box rules to detect image misconfiguration.\nWe frequently update these policies and if you'd like to modify the policy you should use this as a base template to avoid modifications being overwritten.",
+                                        "id": "pci",
+                                        "name": "Default Audit Policy - PCI",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1FlKixNbbNwnsUx8pXX5xV8pboG",
+                                                "params": [
+                                                    {
+                                                        "name": "max_days_since_sync",
+                                                        "value": "7"
+                                                    }
+                                                ],
+                                                "trigger": "stale_feed_data"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1GQfcID4qEqVofO7X131FjMeMyV",
+                                                "params": [
+                                                    {
+                                                        "name": "regex_name",
+                                                        "value": ".*(admin|ADMIN|password|PASSWORD).*"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_match"
+                                            },
+                                            {
+                                                "action": "STOP",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1GQg23r1pCuRWIx7vQ5TxRIJ7uS",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "all"
+                                                    },
+                                                    {
+                                                        "name": "severity_comparison",
+                                                        "value": "\u003e="
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    },
+                                                    {
+                                                        "name": "fix_available",
+                                                        "value": "true"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "secret_scans",
+                                                "id": "rule_1GQgwOAxA3NM1haWLTOiVqfmvsA",
+                                                "params": [
+                                                    {
+                                                        "name": "content_regex_name",
+                                                        "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_checks"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1GQgwIBLieRQXkw6IFn2fEMgjMg",
+                                                "params": [],
+                                                "trigger": "suid_or_guid_set"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1FwAx9O6XGOnz18bInRu9VPSaej",
+                                                "params": [
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    },
+                                                    {
+                                                        "name": "users",
+                                                        "value": "root"
+                                                    }
+                                                ],
+                                                "trigger": "effective_user"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1GQgwJ32rk96G4wRsgbzNYy2vGN",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "USER"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "id": "policy_1VOK65VBwmYuzNbBeS1x0ri1FLS",
+                                        "name": "Default Audit Policy - PCI (copy)",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1VOK68ZJMqggx9QxMcNQlffHCyb",
+                                                "params": [
+                                                    {
+                                                        "name": "max_days_since_sync",
+                                                        "value": "7"
+                                                    }
+                                                ],
+                                                "trigger": "stale_feed_data"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1VOK61rqXFbyg8N0rg1igDbOXxK",
+                                                "params": [
+                                                    {
+                                                        "name": "regex_name",
+                                                        "value": ".*(admin|ADMIN|password|PASSWORD).*"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_match"
+                                            },
+                                            {
+                                                "action": "STOP",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1VOK65NkFGLEohvmttQS8KFRDqu",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "all"
+                                                    },
+                                                    {
+                                                        "name": "severity_comparison",
+                                                        "value": "\u003e="
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    },
+                                                    {
+                                                        "name": "fix_available",
+                                                        "value": "true"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "secret_scans",
+                                                "id": "rule_1VOK63KPR5Eo3axCDRWX9v48Aoi",
+                                                "params": [
+                                                    {
+                                                        "name": "content_regex_name",
+                                                        "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_checks"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1VOK66WWJwbDNzOVizb8z2f60kT",
+                                                "params": [],
+                                                "trigger": "suid_or_guid_set"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1VOK64OE4BEG7vFW3TwxCJNvCNi",
+                                                "params": [
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    },
+                                                    {
+                                                        "name": "users",
+                                                        "value": "root"
+                                                    }
+                                                ],
+                                                "trigger": "effective_user"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1VOK67LqESrEyFVlHLgUtZ1a8wi",
+                                                "params": [
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "USER"
+                                                    },
+                                                    {
+                                                        "name": "check",
+                                                        "value": "not_exists"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "id": "policy_1W5GKstTSCuBgma8kcZa7dHPLnX",
+                                        "name": "Inline Scan Policy",
+                                        "rules": [
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1W5GKt5KTSjcw6Ny8UvAZDHy3Q6",
+                                                "params": [
+                                                    {
+                                                        "name": "ports",
+                                                        "value": "22"
+                                                    },
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    }
+                                                ],
+                                                "trigger": "exposed_ports"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    },
+                                    {
+                                        "comment": "Policy to checkl several things during the SKO trauinig",
+                                        "id": "policy_1XRK5GsApGgfxvxiAEA7wkaC1kq",
+                                        "name": "SKO Training policy",
+                                        "rules": [
+                                            {
+                                                "action": "STOP",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1XRK5HDtTLJ9FBGbYfpl2fk8Uuv",
+                                                "params": [
+                                                    {
+                                                        "name": "type",
+                                                        "value": "blacklist"
+                                                    },
+                                                    {
+                                                        "name": "users",
+                                                        "value": "root"
+                                                    }
+                                                ],
+                                                "trigger": "effective_user"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "secret_scans",
+                                                "id": "rule_1XRK5EYvETF3CeCPW0aV9hLrmr9",
+                                                "params": [
+                                                    {
+                                                        "name": "content_regex_name",
+                                                        "value": "['AWS_ACCESS_KEY', 'AWS_SECRET_KEY', 'PRIV_KEY', 'DOCKER_AUTH', 'API_KEY']"
+                                                    }
+                                                ],
+                                                "trigger": "content_regex_checks"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "vulnerabilities",
+                                                "id": "rule_1XRK5E9tLb1BEoNfqTIOwj8XRrQ",
+                                                "params": [
+                                                    {
+                                                        "name": "package_type",
+                                                        "value": "non-os"
+                                                    },
+                                                    {
+                                                        "name": "severity",
+                                                        "value": "high"
+                                                    }
+                                                ],
+                                                "trigger": "package"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "packages",
+                                                "id": "rule_1XRK5IZ9JQ1jXAAchHwbWuXBjCq",
+                                                "params": [
+                                                    {
+                                                        "name": "name",
+                                                        "value": "jeilyfish"
+                                                    }
+                                                ],
+                                                "trigger": "blacklist"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "dockerfile",
+                                                "id": "rule_1XRK5C7cxM7FzsqLVDEzMpju5vj",
+                                                "params": [
+                                                    {
+                                                        "name": "check",
+                                                        "value": "like"
+                                                    },
+                                                    {
+                                                        "name": "instruction",
+                                                        "value": "RUN"
+                                                    },
+                                                    {
+                                                        "name": "value",
+                                                        "value": ".*jeIlyfish.*"
+                                                    }
+                                                ],
+                                                "trigger": "instruction"
+                                            },
+                                            {
+                                                "action": "WARN",
+                                                "gate": "files",
+                                                "id": "rule_1XRK5CGafx1q4QFEom4GtfSf3Ao",
+                                                "params": [
+                                                    {
+                                                        "name": "regex",
+                                                        "value": "jeIlyfish\\/_jellyfish\\.py"
+                                                    }
+                                                ],
+                                                "trigger": "name_match"
+                                            }
+                                        ],
+                                        "version": "1_0"
+                                    }
+                                ],
+                                "version": "1_0",
+                                "whitelisted_images": [],
+                                "whitelists": [
+                                    {
+                                        "comment": "Default global whitelist",
+                                        "id": "global",
+                                        "items": [],
+                                        "name": "Global Whitelist",
+                                        "version": "1_0"
+                                    }
+                                ]
+                            },
+                            "created_at": 1582633822,
+                            "evaluation_problems": [],
+                            "final_action": "warn",
+                            "final_action_reason": "policy_evaluation",
+                            "image_id": "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                            "last_modified": 1582633822,
+                            "matched_blacklisted_images_rule": false,
+                            "matched_mapping_rule": {
+                                "id": "mapping_1CI5tw3zxNL9b344sSsXBfth3dW",
+                                "image": {
+                                    "type": "tag",
+                                    "value": "*"
+                                },
+                                "name": "default",
+                                "policy_ids": [
+                                    "default"
+                                ],
+                                "registry": "*",
+                                "repository": "*",
+                                "whitelist_ids": [
+                                    "global"
+                                ]
+                            },
+                            "matched_whitelisted_images_rule": false,
+                            "result": {
+                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7": {
+                                    "result": {
+                                        "final_action": "warn",
+                                        "header": [
+                                            "Image_Id",
+                                            "Repo_Tag",
+                                            "Trigger_Id",
+                                            "Gate",
+                                            "Trigger",
+                                            "Check_Output",
+                                            "Gate_Action",
+                                            "Whitelisted",
+                                            "Policy_Id"
+                                        ],
+                                        "row_count": 17,
+                                        "rows": [
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "41cb7cdf04850e33a11f80c42bf660b3",
+                                                "dockerfile",
+                                                "instruction",
+                                                "Dockerfile directive 'HEALTHCHECK' not found, matching condition 'not_exists' check",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "1571e70ee221127984dcf585a56d4cff",
+                                                "dockerfile",
+                                                "instruction",
+                                                "Dockerfile directive 'USER' not found, matching condition 'not_exists' check",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "bcd2d285f87b13dd5d94b770bc7d69bb",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /bin/mount. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "91192388289daa4ffb2844ac9fbd709f",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /bin/su. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "e0ed25fb84059281ae26ad059accb5af",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /bin/umount. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "9b810028f73e670e702c18625d3412c6",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /sbin/unix_chkpwd. Mode: 0o102755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "75d08d8c7b064bbd44f2f524c924d17b",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/chage. Mode: 0o102755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "6329fe232b699ab5b4c9002b9f1b1f9e",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/chfn. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "e56b64c2a7d254d4174ecaed69899327",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/chsh. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "eec438eed6560f1ea7792b726009538e",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/expiry. Mode: 0o102755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "c2e44319ae5b3b040044d8ae116d1c2f",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/gpasswd. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "463a9a24225c26f7a5bf3f38908e5cb3",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/newgrp. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "bcd159901fe47efddae5c095b4b0d7fd",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/passwd. Mode: 0o104755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "7218d80206fb8d9c1f61ca5650e4e018",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/bin/wall. Mode: 0o102755",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "8e163263cda4bd745af2e34598d058fe",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /usr/local/share/fonts. Mode: 0o42775",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "4f9abc83a7a1c95e222b659e0fab27fa",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /var/local. Mode: 0o42775",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ],
+                                            [
+                                                "c7460dfcab502275e9c842588df406444069c00a48d9a995619c243079a4c2f7",
+                                                "docker.io/nginx:1.17.7",
+                                                "da870e801836e419385f2f300713cf7f",
+                                                "files",
+                                                "suid_or_guid_set",
+                                                "SUID or SGID found set on file /var/mail. Mode: 0o42775",
+                                                "warn",
+                                                false,
+                                                "default"
+                                            ]
+                                        ]
+                                    }
+                                },
+                                "policy_data": [],
+                                "policy_name": "",
+                                "whitelist_data": [],
+                                "whitelist_names": []
+                            },
+                            "tag": "docker.io/nginx:1.17.7",
+                            "user_id": "tenant_1TqQxfrhMuzrTAkZ5X7smleHiRe"
+                        }
+                    },
+                    "last_evaluation": "2020-02-25T12:30:22Z",
+                    "policyId": "default",
+                    "status": "pass"
+                }
+            ]
+        }
+    }
+]

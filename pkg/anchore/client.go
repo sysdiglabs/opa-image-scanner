@@ -78,6 +78,39 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	return bodyText, nil
 }
 
+func getResult(digest string, tag string) ([]map[string]interface{}, error) {
+	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
+	body, err := anchoreRequest(path, nil, "GET")
+
+	if err != nil && err.Error() == errNotFound {
+		// first time scanned image, return true
+		klog.Warningf("[Anchore] image %s with tag %s has not been scanned.", digest, tag)
+		//TODO: Report why the image is rejected
+		return nil, err
+	}
+
+	if err != nil {
+		klog.Errorf("[Anchore] scan error %v", err)
+		//TODO: Report why the image is rejected
+		return nil, err
+	}
+
+	ret := string(body)
+	ret = strings.Replace(ret, "\t", "  ", -1)
+
+	klog.Infof("[Anchore] Anchore Response Body: %s", ret)
+
+	var result []map[string]interface{}
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		klog.Errorf("[Anchore] body unmarshall error %v", err)
+		//TODO: Report why the image is rejected
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func getStatus(digest string, tag string) (bool, error) {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
 	body, err := anchoreRequest(path, nil, "GET")
@@ -189,4 +222,12 @@ func CheckImage(image string) (bool, error) {
 		return false, fmt.Errorf("Unable to obtain image digest")
 	}
 	return getStatus(digest, image)
+}
+
+func GetScanResult(image string) ([]map[string]interface{}, error) {
+	digest, err := GetImageDigest(image)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to obtain image digest")
+	}
+	return getResult(digest, image)
 }

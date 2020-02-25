@@ -27,6 +27,7 @@ import (
 	"sync"
 
 	"image-scan-webhook/pkg/anchore"
+	"image-scan-webhook/pkg/opa"
 
 	genericadmissionserver "github.com/openshift/generic-admission-server/pkg/cmd"
 	corev1 "k8s.io/api/core/v1"
@@ -100,15 +101,24 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 	for _, container := range pod.Spec.Containers {
 		image := container.Image
 		klog.Info("Checking image: " + image)
-		if ret, err := anchore.CheckImage(image); !ret {
-			reviewResponse.Allowed = false
-			msg := fmt.Sprintf("Image failed policy check: %s. Error: %s", image, err)
-			reviewResponse.Result = &metav1.Status{Message: msg}
-			klog.Warning(msg)
-			return &reviewResponse
-		} else {
-			klog.Info("Image passed policy check: " + image)
+
+		result, err := anchore.GetScanResult(image)
+		if err != nil {
+			klog.Warningf("Get image scan result error: %v", err)
 		}
+
+		klog.Info("Evaluating rego")
+		opa.Test(result)
+
+		// if ret, err := anchore.CheckImage(image); !ret {
+		// 	reviewResponse.Allowed = false
+		// 	msg := fmt.Sprintf("Image failed policy check: %s. Error: %s", image, err)
+		// 	reviewResponse.Result = &metav1.Status{Message: msg}
+		// 	klog.Warning(msg)
+		// 	return &reviewResponse
+		// } else {
+		// 	klog.Info("Image passed policy check: " + image)
+		// }
 	}
 
 	klog.Info("Pod accepted: " + pod.Name)
