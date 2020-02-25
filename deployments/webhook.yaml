@@ -1,0 +1,21 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: "image-scan-policy-api"
+webhooks:
+- name: "image-scan-policy-api.sysdig.com"
+  rules:
+  - apiGroups: [""]
+    apiVersions: ["v1"]
+    operations: ["CREATE"]
+    resources: ["pods"]
+    scope: "*"
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/admission.sysdig.com/v1beta1/imagechecks
+    caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUNsRENDQVh3Q0NRRFBhR2NmK1NqcnN6QU5CZ2txaGtpRzl3MEJBUXNGQURBTU1Rb3dDQVlEVlFRRERBRXEKTUI0WERUSXdNREl3TlRFeE16Z3lPRm9YRFRNd01ESXdNakV4TXpneU9Gb3dEREVLTUFnR0ExVUVBd3dCS2pDQwpBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQU5ROWlpUjAvMmJVdDYyTEJyNlY5MGhQCnJCd0krNHZhaDRxWUdSbFRHTUY5NG03YlhDT0pLSHk2UllKblRKZXdFVnZzV3dBdDU4ZUlxWjErYjZVK2ZKNEYKLzJFcmxXTGhBQWdMWEpYWXIvby9lWC9IUTZhMGZ0TEFpRXdhUkxRWmNUanBpSDRpQXlQQnRKelREVzllSktjaQowc1htRkZEQXUrR3pzYXduQ2ZycHV4TGlEcUdlMEFHUjNkWDBmRlhLREx1ajJuTkVhbUdOcjkyVTl0T0t6Y1R1CkpYYVZFNUhkM0tCQytDa3BBYk5BM3F6U2g5Vm5yVE1VNVk3aVFHaUQ0Y2FDMVozSVJqR2pDSXd4blZxWmJyTTgKblF5eG5ud0JYKzJJZXR4cWZpcENacjhOZW9hKzRMcUk3TmFZUE81R0J3aW8zTmJYM001dmpNZVpId3BkcTZjQwpBd0VBQVRBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQUM3cXVZSjNCMU9WMlZ1d3FxcW1lWHQyb0VzZlBGUTI0CnRpNHhIN3BUZ2YrT2NnWkw3MUtRNXhnWVM3WWFkTy96c2JEVWRhOHcrV2p3akpTaXZPK3pGaGxCL0VDeU9yR24KUUo1YnpWRldoZ09mMWRwMmhvNEVXZkFtcE54Q0NQNzBoNGdhSENMRXhveS8wQXVRcWZUMmVTSjFqK0JvemtjRQpxeFMyY3V5bGMxVEtRcW1wSytjdGdKc3VZa1U3OUpDQUlERHBmYXk2c0NpZGhvN2Rhc25RMUp6QmpmYW5SVTVvCitCcnRGMk1xbDIvQ1BmUVFvOGw1b3RYNk10ekx5WDE4TE11aEJLK3FYT2dwZzRKcXorSXFiQjlta1pMb2RYYzMKajEzbG14ZVlYNE8xS1dLOG5CdjEwN2FmTkdScWpFbkRub01MNndKamg5cmpPTWJXcTNLNFJBPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+  admissionReviewVersions: ["v1beta1"]
+  sideEffects: None
+  timeoutSeconds: 5

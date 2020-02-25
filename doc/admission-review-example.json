@@ -1,0 +1,120 @@
+{
+  "uid": "6870143b-55da-40be-b42f-3fc64799bd5d",
+  "kind": {
+    "group": "",
+    "version": "v1",
+    "kind": "Pod"
+  },
+  "resource": {
+    "group": "",
+    "version": "v1",
+    "resource": "pods"
+  },
+  "requestKind": {
+    "group": "",
+    "version": "v1",
+    "kind": "Pod"
+  },
+  "requestResource": {
+    "group": "",
+    "version": "v1",
+    "resource": "pods"
+  },
+  "name": "test-dep-76758659b5-4qq69",
+  "namespace": "default",
+  "operation": "CREATE",
+  "userInfo": {
+    "username": "system:serviceaccount:kube-system:replicaset-controller",
+    "uid": "3745a732-c159-4a58-8a8e-61b07e27573b",
+    "groups": [
+      "system:serviceaccounts",
+      "system:serviceaccounts:kube-system",
+      "system:authenticated"
+    ]
+  },
+  "object": {
+    "kind": "Pod",
+    "apiVersion": "v1",
+    "metadata": {
+      "name": "test-dep-76758659b5-4qq69",
+      "generateName": "test-dep-76758659b5-",
+      "namespace": "default",
+      "uid": "aac24f4d-d63f-4ab5-b95b-56cd57579071",
+      "creationTimestamp": "2020-02-24T19:15:01Z",
+      "labels": {
+        "app": "test-dep",
+        "pod-template-hash": "76758659b5"
+      },
+      "ownerReferences": [
+        {
+          "apiVersion": "apps/v1",
+          "kind": "ReplicaSet",
+          "name": "test-dep-76758659b5",
+          "uid": "4c925465-d86a-447b-a6d0-e5a7cefba425",
+          "controller": true,
+          "blockOwnerDeletion": true
+        }
+      ]
+    },
+    "spec": {
+      "volumes": [
+        {
+          "name": "default-token-pnrxp",
+          "secret": {
+            "secretName": "default-token-pnrxp"
+          }
+        }
+      ],
+      "containers": [
+        {
+          "name": "nginx",
+          "image": "nginx",
+          "resources": {},
+          "volumeMounts": [
+            {
+              "name": "default-token-pnrxp",
+              "readOnly": true,
+              "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+            }
+          ],
+          "terminationMessagePath": "/dev/termination-log",
+          "terminationMessagePolicy": "File",
+          "imagePullPolicy": "Always"
+        }
+      ],
+      "restartPolicy": "Always",
+      "terminationGracePeriodSeconds": 30,
+      "dnsPolicy": "ClusterFirst",
+      "serviceAccountName": "default",
+      "serviceAccount": "default",
+      "securityContext": {},
+      "schedulerName": "default-scheduler",
+      "tolerations": [
+        {
+          "key": "node.kubernetes.io/not-ready",
+          "operator": "Exists",
+          "effect": "NoExecute",
+          "tolerationSeconds": 300
+        },
+        {
+          "key": "node.kubernetes.io/unreachable",
+          "operator": "Exists",
+          "effect": "NoExecute",
+          "tolerationSeconds": 300
+        }
+      ],
+      "priority": 0,
+      "enableServiceLinks": true
+    },
+    "status": {
+      "phase": "Pending",
+      "qosClass": "BestEffort"
+    }
+  },
+  "oldObject": null,
+  "dryRun": false,
+  "options": {
+    "kind": "CreateOptions",
+    "apiVersion": "meta.k8s.io/v1"
+  }
+}

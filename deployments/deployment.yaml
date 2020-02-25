@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: image-scan-webhook
+  name: image-scan-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-scan-webhook
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: image-scan-webhook
+    spec:
+      serviceAccount: image-scan-sa
+      containers:
+      - image: airadier/image-scan-webhook
+        name: image-scan-webhook
+        args:
+          - --secure-port=8443
+          - --tls-cert-file
+          - /cert/tls.crt
+          - --tls-private-key-file
+          - /cert/tls.key
+        volumeMounts:
+          - name: cert
+            mountPath: /cert
+            readOnly: true
+          - name: sysdig-token
+            mountPath: /tmp/sysdig-token
+            readOnly: true
+      volumes:
+      - name: cert
+        secret:
+          secretName: tls
+      - name: sysdig-token
+        secret:
+          defaultMode: 420
+          secretName: sysdig-secure-token
