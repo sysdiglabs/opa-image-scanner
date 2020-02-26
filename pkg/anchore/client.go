@@ -78,7 +78,7 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	return bodyText, nil
 }
 
-func getResult(digest string, tag string) ([]map[string]interface{}, error) {
+func getReport(digest string, tag string) (*ScanReport, error) {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
 	body, err := anchoreRequest(path, nil, "GET")
 
@@ -100,63 +100,57 @@ func getResult(digest string, tag string) ([]map[string]interface{}, error) {
 
 	klog.Infof("[Anchore] Anchore Response Body: %s", ret)
 
-	var result []map[string]interface{}
+	var result ScanReports
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		klog.Errorf("[Anchore] body unmarshall error %v", err)
+		klog.Errorf("[Anchore] Body unmarshall error %v", err)
 		//TODO: Report why the image is rejected
 		return nil, err
 	}
 
-	return result, nil
+	if len(result) == 0 {
+		klog.Errorf("[Anchore] Scan report list is empty")
+		return nil, fmt.Errorf("Scan report list is empty")
+	}
+
+	if len(result) > 1 {
+		klog.Errorf("[Anchore] Unexpected scan report: multiple entries")
+		return nil, fmt.Errorf("Unexpected scan report: multiple entries")
+	}
+
+	if _, ok := result[0][digest]; !ok {
+		klog.Errorf("[Anchore] Digest in the scan report does not match")
+		return nil, fmt.Errorf("Digest in the scan report does not match")
+	}
+
+	fullTag := reflect.ValueOf(result[0][digest]).MapKeys()[0].String()
+
+	return &result[0][digest][fullTag][0], nil
 }
 
 func getStatus(digest string, tag string) (bool, error) {
-	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
-	body, err := anchoreRequest(path, nil, "GET")
-
-	if err != nil && err.Error() == errNotFound {
-		// first time scanned image, return true
-		klog.Warningf("[Anchore] image %s with tag %s has not been scanned.", digest, tag)
-		//TODO: Report why the image is rejected
-		return false, err
-	}
+	result, err := getReport(digest, tag)
 
 	if err != nil {
-		klog.Errorf("[Anchore] scan error %v", err)
-		//TODO: Report why the image is rejected
 		return false, err
 	}
 
-	ret := string(body)
-	ret = strings.Replace(ret, "\t", "  ", -1)
+	// foundStatus := findStatus(result)
 
-	klog.Infof("[Anchore] Anchore Response Body: %s", ret)
-
-	var result []map[string]map[string][]SHAResult
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		klog.Errorf("[Anchore] body unmarshall error %v", err)
-		//TODO: Report why the image is rejected
-		return false, err
-	}
-
-	foundStatus := findStatus(result)
-
-	if strings.ToLower(foundStatus) == "pass" {
+	if strings.ToLower(result.Status) == "pass" {
 		return true, nil
 	} else {
 		return false, fmt.Errorf("Scan result is FAILED")
 	}
 }
 
-func findStatus(parsed_result []map[string]map[string][]SHAResult) string {
-	//Looks thru a parsed result for the status value, assumes this result is for a single image
+// func findStatus(parsed_result []map[string]map[string][]SHAResult) string {
+// 	//Looks thru a parsed result for the status value, assumes this result is for a single image
 
-	digest := reflect.ValueOf(parsed_result[0]).MapKeys()[0].String()
-	tag := reflect.ValueOf(parsed_result[0][digest]).MapKeys()[0].String()
-	return parsed_result[0][digest][tag][0].Status
-}
+// 	digest := reflect.ValueOf(parsed_result[0]).MapKeys()[0].String()
+// 	tag := reflect.ValueOf(parsed_result[0][digest]).MapKeys()[0].String()
+// 	return parsed_result[0][digest][tag][0].Status
+// }
 
 func getDigest(imageRef string) (string, error) {
 	// Tag or repo??
@@ -224,10 +218,10 @@ func CheckImage(image string) (bool, error) {
 	return getStatus(digest, image)
 }
 
-func GetScanResult(image string) ([]map[string]interface{}, error) {
+func GetScanReport(image string) (*ScanReport, error) {
 	digest, err := GetImageDigest(image)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to obtain image digest")
 	}
-	return getResult(digest, image)
+	return getReport(digest, image)
 }

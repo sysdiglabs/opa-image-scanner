@@ -72,6 +72,11 @@ func (a *admissionHook) ValidatingResource() (plural schema.GroupVersionResource
 
 }
 
+type OPAInput struct {
+	ScanReport       *anchore.ScanReport
+	AdmissionRequest *v1beta1.AdmissionRequest
+}
+
 func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
 	klog.Info("Verifying pods")
 
@@ -102,13 +107,21 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 		image := container.Image
 		klog.Info("Checking image: " + image)
 
-		result, err := anchore.GetScanResult(image)
+		result, err := anchore.GetScanReport(image)
 		if err != nil {
 			klog.Warningf("Get image scan result error: %v", err)
+		} else {
+			klog.Info("Evaluating scan report with OPA")
+			opaInput := OPAInput{result, admissionSpec}
+			err := opa.Test(opaInput)
+			if err != nil {
+				reviewResponse.Allowed = false
+				msg := fmt.Sprintf("Image failed policy check: %s. Error: %v", image, err)
+				reviewResponse.Result = &metav1.Status{Message: msg}
+				klog.Warning(msg)
+				return &reviewResponse
+			}
 		}
-
-		klog.Info("Evaluating rego")
-		opa.Test(result)
 
 		// if ret, err := anchore.CheckImage(image); !ret {
 		// 	reviewResponse.Allowed = false
