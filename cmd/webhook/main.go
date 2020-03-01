@@ -37,7 +37,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const opaRulesFile = "/rules.rego"
+const opaRulesFile = "/tmp/image-scan/rules.rego"
 
 var regoFile string = `
 package imageadmission
@@ -52,9 +52,9 @@ func init() {
 	regoFileContents, err := ioutil.ReadFile(opaRulesFile)
 	if err != nil {
 		klog.Errorf("Error reading rules file %s: #%v ", opaRulesFile, err)
+	} else {
+		regoFile = string(regoFileContents)
 	}
-
-	regoFile = string(regoFileContents)
 }
 
 type admissionHook struct {

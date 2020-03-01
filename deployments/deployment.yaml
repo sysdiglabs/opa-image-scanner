@@ -33,6 +33,9 @@ spec:
           - name: sysdig-token
             mountPath: /tmp/sysdig-token
             readOnly: true
+          - name: rules
+            mountPath: /tmp/image-scan
+            readOnly: true
       volumes:
       - name: cert
         secret:
@@ -41,3 +44,6 @@ spec:
         secret:
           defaultMode: 420
           secretName: sysdig-secure-token
+      - name: rules
+        configMap:
+          name: image-scan-rules

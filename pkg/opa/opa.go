@@ -22,13 +22,13 @@ func Evaluate(rules string, input interface{}) error {
 		return err
 	}
 
-	b, err := json.Marshal(input)
+	b, err := json.MarshalIndent(input, "", "  ")
 	if err != nil {
 		return fmt.Errorf("Error marshalling input to JSON: %v", err)
 	}
 
-	klog.Infof("[rego] Input rules:\n", rules)
-	klog.Infof("[rego] Input is %s", string(b))
+	klog.Infof("[rego] Input rules:\n%s", rules)
+	klog.Infof("[rego] Input is:\n%s", string(b))
 
 	ctx := context.Background()
 	rego := rego.New(
