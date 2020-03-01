@@ -17,8 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"k8s.io/api/admission/v1beta1"
 
@@ -35,9 +35,27 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
-	// TODO: try this library to see if it generates correct json patch
-	// https://github.com/mattbaird/jsonpatch
 )
+
+const opaRulesFile = "/rules.rego"
+
+var regoFile string = `
+package imageadmission
+
+deny_image[msg] {
+	msg := "No rules defined. Please define 'imageadmission' package with deny_image[msg] rules"
+}
+`
+
+func init() {
+
+	regoFileContents, err := ioutil.ReadFile(opaRulesFile)
+	if err != nil {
+		klog.Errorf("Error reading rules file %s: #%v ", opaRulesFile, err)
+	}
+
+	regoFile = string(regoFileContents)
+}
 
 type admissionHook struct {
 	reservationClient dynamic.ResourceInterface
@@ -78,11 +96,7 @@ type OPAInput struct {
 }
 
 func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
-	klog.Info("Verifying pods")
-
-	klog.Info("AdmissionRequest")
-	request, _ := json.Marshal(admissionSpec)
-	klog.Info(string(request))
+	klog.Info("Verifying Pod admission request")
 
 	podResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 
@@ -113,7 +127,7 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 		} else {
 			klog.Info("Evaluating scan report with OPA")
 			opaInput := OPAInput{result, admissionSpec}
-			err := opa.Test(opaInput)
+			err := opa.Evaluate(regoFile, opaInput)
 			if err != nil {
 				reviewResponse.Allowed = false
 				msg := fmt.Sprintf("Image failed policy check: %s. Error: %v", image, err)
@@ -122,16 +136,6 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 				return &reviewResponse
 			}
 		}
-
-		// if ret, err := anchore.CheckImage(image); !ret {
-		// 	reviewResponse.Allowed = false
-		// 	msg := fmt.Sprintf("Image failed policy check: %s. Error: %s", image, err)
-		// 	reviewResponse.Result = &metav1.Status{Message: msg}
-		// 	klog.Warning(msg)
-		// 	return &reviewResponse
-		// } else {
-		// 	klog.Info("Image passed policy check: " + image)
-		// }
 	}
 
 	klog.Info("Pod accepted: " + pod.Name)

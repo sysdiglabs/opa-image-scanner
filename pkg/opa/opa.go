@@ -2,6 +2,7 @@ package opa
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -10,46 +11,24 @@ import (
 	"k8s.io/klog"
 )
 
-func Test(input interface{}) error {
-
-	// Define a simple policy.
-	module := `
-	package imageadmission
-
-	allow_image {
-		input.message == "hello"
-	}
-
-	allow_image {
-		input.ScanReport.Status == "passatio"
-	}
-	
-	deny_image[msg] {
-		not allow_image
-		msg := "Denying images by default"
-	}
-	
-	deny_image[msg] {
-		not allow_image
-		msg := "Because I want to deny"
-	}
-
-	deny_image[msg] {
-		not allow_image
-		msg := input.ScanReport.Status
-	}
-	`
+func Evaluate(rules string, input interface{}) error {
 
 	// Compile the module. The keys are used as identifiers in error messages.
 	compiler, err := ast.CompileModules(map[string]string{
-		"imageadmission.rego": module,
+		"imageadmission.rego": rules,
 	})
 
 	if err != nil {
 		return err
 	}
 
-	klog.Infof("[rego] Input is %s", input)
+	b, err := json.Marshal(input)
+	if err != nil {
+		return fmt.Errorf("Error marshalling input to JSON: %v", err)
+	}
+
+	klog.Infof("[rego] Input rules:\n", rules)
+	klog.Infof("[rego] Input is %s", string(b))
 
 	ctx := context.Background()
 	rego := rego.New(
