@@ -1,29 +1,60 @@
-# # Allow delegate authentication and authorization to the service account
-# apiVersion: rbac.authorization.k8s.io/v1
-# kind: ClusterRoleBinding
-# metadata:
-#   name: auth-delegator-image-scan-default
-# roleRef:
-#   kind: ClusterRole
-#   apiGroup: rbac.authorization.k8s.io
-#   name: system:auth-delegator
-# subjects:
-# - kind: ServiceAccount
-#   namespace: default
-#   name: image-scan-sa
-# ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: extension-apiserver-authentication-watcher
+  namespace: kube-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+    - configmaps
+  resourceNames:
+  - extension-apiserver-authentication
+  verbs:
+  - list
+  - get
+  - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sysdig-image-scan-apiserver-auth-watcher
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: extension-apiserver-authentication-watcher
+subjects:
+- kind: ServiceAccount
+  name: sysdig-image-scan
+  namespace: sysdig-image-scan
+---
+# Allow delegate authentication and authorization to the service account
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: auth-delegator-image-scan-admin
+  name: sysdig-image-scan-auth-delegator
 roleRef:
   kind: ClusterRole
   apiGroup: rbac.authorization.k8s.io
-  name: cluster-admin
+  name: system:auth-delegator
 subjects:
 - kind: ServiceAccount
-  namespace: default
-  name: image-scan-sa
+  name: sysdig-image-scan
+  namespace: sysdig-image-scan
+# ---
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: auth-delegator-image-scan-admin
+# roleRef:
+#   kind: ClusterRole
+#   apiGroup: rbac.authorization.k8s.io
+#   name: cluster-admin
+# subjects:
+# - kind: ServiceAccount
+#   namespace: sysdig-image-scan
+#   name: sysdig-image-scan
 # ---
 # # to let the admission server read the namespace reservations
 # apiVersion: rbac.authorization.k8s.io/v1

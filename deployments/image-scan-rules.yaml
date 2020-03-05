@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: image-scan-rules
+  namespace: sysdig-image-scan
 data:
   rules.rego: "package imageadmission\n\nallow_image {\n\tinput.message == \"hello\"\n}\n\nallow_image
     {\n\tinput.ScanReport.Status == \"pass\"\n}\n\ndeny_image[msg] {\n\tnot allow_image\n\tmsg

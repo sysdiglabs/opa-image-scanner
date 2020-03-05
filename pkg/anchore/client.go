@@ -12,9 +12,16 @@ import (
 	"time"
 
 	"k8s.io/klog"
-
-	"gopkg.in/yaml.v2"
 )
+
+func NewClient(baseUrl, secureToken string) (*AnchoreClient, error) {
+	client := AnchoreClient{
+		baseUrl:     baseUrl,
+		secureToken: secureToken,
+	}
+
+	return &client, nil
+}
 
 var (
 	transCfg = &http.Transport{
@@ -24,32 +31,12 @@ var (
 	client = &http.Client{
 		Transport: transCfg,
 	}
-
-	anchoreConfig AnchoreConfig
-
-	anchoreConfigFile = "/tmp/sysdig-token/config.yaml"
-
-	errNotFound = "response from Anchore: 404"
 )
 
-func init() {
+const errNotFound = "response from Anchore: 404"
 
-	yamlFile, err := ioutil.ReadFile(anchoreConfigFile)
-	if err != nil {
-		klog.Errorf("[Anchore] yamlFile.Get err   #%v ", err)
-	}
-
-	err = yaml.Unmarshal(yamlFile, &anchoreConfig)
-	if err != nil {
-		klog.Fatalf("[Anchore] Unmarshal: %v", err)
-	}
-}
-
-func anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
-	username := anchoreConfig.Token
-	password := ""
-	anchoreEngineURL := anchoreConfig.EndpointURL
-	fullURL := anchoreEngineURL + path
+func (c *AnchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
+	fullURL := c.baseUrl + path
 
 	bodyParamJson, err := json.Marshal(bodyParams)
 	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(bodyParamJson))
@@ -57,7 +44,7 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 		klog.Fatal(err)
 	}
 
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(c.secureToken, "")
 	klog.Infof("[Anchore] Sending request to %s, with params %s", fullURL, bodyParams)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -78,9 +65,9 @@ func anchoreRequest(path string, bodyParams map[string]string, method string) ([
 	return bodyText, nil
 }
 
-func getReport(digest string, tag string) (*ScanReport, error) {
+func (c *AnchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
-	body, err := anchoreRequest(path, nil, "GET")
+	body, err := c.anchoreRequest(path, nil, "GET")
 
 	if err != nil && err.Error() == errNotFound {
 		// first time scanned image, return true
@@ -128,8 +115,8 @@ func getReport(digest string, tag string) (*ScanReport, error) {
 	return &result[0][digest][fullTag][0], nil
 }
 
-func getStatus(digest string, tag string) (bool, error) {
-	result, err := getReport(digest, tag)
+func (c *AnchoreClient) getStatus(digest string, tag string) (bool, error) {
+	result, err := c.getReport(digest, tag)
 
 	if err != nil {
 		return false, err
@@ -144,22 +131,14 @@ func getStatus(digest string, tag string) (bool, error) {
 	}
 }
 
-// func findStatus(parsed_result []map[string]map[string][]SHAResult) string {
-// 	//Looks thru a parsed result for the status value, assumes this result is for a single image
-
-// 	digest := reflect.ValueOf(parsed_result[0]).MapKeys()[0].String()
-// 	tag := reflect.ValueOf(parsed_result[0][digest]).MapKeys()[0].String()
-// 	return parsed_result[0][digest][tag][0].Status
-// }
-
-func getDigest(imageRef string) (string, error) {
+func (c *AnchoreClient) getDigest(imageRef string) (string, error) {
 	// Tag or repo??
 	params := map[string]string{
 		"tag":     imageRef,
 		"history": "true",
 	}
 
-	body, err := anchoreRequest("/images", params, "GET")
+	body, err := c.anchoreRequest("/images", params, "GET")
 	if err != nil {
 		klog.Errorf("[Anchore] %v", err)
 		return "", err
@@ -175,9 +154,9 @@ func getDigest(imageRef string) (string, error) {
 	return images[0].ImageDigest, nil
 }
 
-func addImage(image string) error {
+func (c *AnchoreClient) addImage(image string) error {
 	params := map[string]string{"tag": image}
-	_, err := anchoreRequest("/images", params, "POST")
+	_, err := c.anchoreRequest("/images", params, "POST")
 	if err != nil {
 		return err
 	}
@@ -186,8 +165,8 @@ func addImage(image string) error {
 	return nil
 }
 
-func GetImageDigest(image string) (digest string, err error) {
-	err = addImage(image)
+func (c *AnchoreClient) GetImageDigest(image string) (digest string, err error) {
+	err = c.addImage(image)
 	if err != nil {
 		klog.Errorf("[Anchore] addImage error: %s", err)
 		return
@@ -195,7 +174,7 @@ func GetImageDigest(image string) (digest string, err error) {
 
 	count := 0
 	for {
-		digest, err = getDigest(image)
+		digest, err = c.getDigest(image)
 		if err == nil {
 			return
 		}
@@ -210,18 +189,18 @@ func GetImageDigest(image string) (digest string, err error) {
 	}
 }
 
-func CheckImage(image string) (bool, error) {
-	digest, err := GetImageDigest(image)
+func (c *AnchoreClient) CheckImage(image string) (bool, error) {
+	digest, err := c.GetImageDigest(image)
 	if err != nil {
 		return false, fmt.Errorf("Unable to obtain image digest")
 	}
-	return getStatus(digest, image)
+	return c.getStatus(digest, image)
 }
 
-func GetScanReport(image string) (*ScanReport, error) {
-	digest, err := GetImageDigest(image)
+func (c *AnchoreClient) GetScanReport(image string) (*ScanReport, error) {
+	digest, err := c.GetImageDigest(image)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to obtain image digest")
 	}
-	return getReport(digest, image)
+	return c.getReport(digest, image)
 }

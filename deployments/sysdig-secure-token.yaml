@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Secret
-metadata:
-  name: sysdig-secure-token
-type: Opaque
-stringData:
-  config.yaml: |-
-      ANCHORE_CLI_TOKEN: xxxxxx
-      ANCHORE_CLI_URL: https://api.sysdigcloud.com/api/scanning/v1/anchore

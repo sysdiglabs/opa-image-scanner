@@ -1,22 +1,33 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sysdig-image-scan
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sysdig-image-scan
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   creationTimestamp: null
   labels:
-    app: image-scan-webhook
-  name: image-scan-webhook
+    app: sysdig-image-scan
+  name: sysdig-image-scan
+  namespace: sysdig-image-scan
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: image-scan-webhook
+      app: sysdig-image-scan
   template:
     metadata:
-      creationTimestamp: null
       labels:
-        app: image-scan-webhook
+        app: sysdig-image-scan
     spec:
-      serviceAccount: image-scan-sa
+      serviceAccount: sysdig-image-scan
       containers:
       - image: airadier/image-scan-webhook
         name: image-scan-webhook
@@ -26,12 +37,12 @@ spec:
           - /cert/tls.crt
           - --tls-private-key-file
           - /cert/tls.key
+        envFrom:
+          - secretRef:
+              name: sysdig-secure-token
         volumeMounts:
           - name: cert
             mountPath: /cert
-            readOnly: true
-          - name: sysdig-token
-            mountPath: /tmp/sysdig-token
             readOnly: true
           - name: rules
             mountPath: /tmp/image-scan
@@ -39,11 +50,26 @@ spec:
       volumes:
       - name: cert
         secret:
-          secretName: tls
-      - name: sysdig-token
-        secret:
-          defaultMode: 420
-          secretName: sysdig-secure-token
+          secretName: sysdig-image-scan-tls
       - name: rules
         configMap:
           name: image-scan-rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sysdig-image-scan
+  name: image-scan-webhook
+  namespace: sysdig-image-scan
+spec:
+  ports:
+  - name: webhook-port
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app: sysdig-image-scan
+  sessionAffinity: None
+  type: ClusterIP
+---  

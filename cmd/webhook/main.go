@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"k8s.io/api/admission/v1beta1"
 
@@ -119,27 +120,46 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 
 	for _, container := range pod.Spec.Containers {
 		image := container.Image
-		klog.Info("Checking image: " + image)
 
-		result, err := anchore.GetScanReport(image)
+		client, err := NewAnchoreClient()
 		if err != nil {
-			klog.Warningf("Get image scan result error: %v", err)
+			klog.Errorf("Error creating Image Scan client: %v", err)
+			//TODO: Evaluate error with OPA
 		} else {
-			klog.Info("Evaluating scan report with OPA")
-			opaInput := OPAInput{result, admissionSpec}
-			err := opa.Evaluate(regoFile, opaInput)
+			klog.Info("Checking image: " + image)
+
+			result, err := client.GetScanReport(image)
 			if err != nil {
-				reviewResponse.Allowed = false
-				msg := fmt.Sprintf("Image failed policy check: %s. Error: %v", image, err)
-				reviewResponse.Result = &metav1.Status{Message: msg}
-				klog.Warning(msg)
-				return &reviewResponse
+				klog.Warningf("Get image scan result error: %v", err)
+			} else {
+				klog.Info("Evaluating scan report with OPA")
+				opaInput := OPAInput{result, admissionSpec}
+				err := opa.Evaluate(regoFile, opaInput)
+				if err != nil {
+					reviewResponse.Allowed = false
+					msg := fmt.Sprintf("Image failed policy check: %s. Error: %v", image, err)
+					reviewResponse.Result = &metav1.Status{Message: msg}
+					klog.Warning(msg)
+					return &reviewResponse
+				}
 			}
 		}
 	}
 
 	klog.Info("Pod accepted: " + pod.Name)
 	return &reviewResponse
+}
+
+func NewAnchoreClient() (*anchore.AnchoreClient, error) {
+	baseUrl := os.Getenv("SYSDIG_SECURE_URL")
+	if baseUrl == "" {
+		return nil, fmt.Errorf("Environment variable SYSDIG_SECURE_URL is not defined")
+	}
+	token := os.Getenv("SYSDIG_SECURE_TOKEN")
+	if token == "" {
+		return nil, fmt.Errorf("Environment variable SYSDIG_SECURE_TOKEN is not defined")
+	}
+	return anchore.NewClient(baseUrl, token)
 }
 
 func main() {
