@@ -8,6 +8,16 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: sysdig-image-scan
+  namespace: sysdig-image-scan
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: image-scan-config
+  namespace: sysdig-image-scan
+data:
+  SYSDIG_SECURE_URL: https://api.sysdigcloud.com/api/scanning/v1/anchore
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -16,7 +26,6 @@ metadata:
   labels:
     app: sysdig-image-scan
   name: sysdig-image-scan
-  namespace: sysdig-image-scan
 spec:
   replicas: 1
   selector:
@@ -38,6 +47,8 @@ spec:
           - --tls-private-key-file
           - /cert/tls.key
         envFrom:
+          - configMapRef:
+              name: image-scan-config
           - secretRef:
               name: sysdig-secure-token
         volumeMounts:

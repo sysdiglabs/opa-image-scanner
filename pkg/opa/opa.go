@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
@@ -58,18 +59,20 @@ func Evaluate(rules string, input interface{}) error {
 		return fmt.Errorf("Rego - unexpected Expressions length: %d", len(rs[0].Expressions))
 	}
 
-	klog.Infof("[rego] value: %s", rs[0].Expressions[0].Value)
+	klog.Infof("[rego] value: %#v", rs[0].Expressions[0].Value)
 
 	// TODO: Some tests and how to check if it is returning an empty list (OK) or not
 	if reflect.ValueOf(rs[0].Expressions[0].Value).Kind() == reflect.Slice {
 		if reflect.ValueOf(rs[0].Expressions[0].Value).Len() > 0 {
-			return fmt.Errorf("Image denied by OPA rules: %s", rs[0].Expressions[0].Value)
+			values := rs[0].Expressions[0].Value.([]interface{})
+			var msgBuilder strings.Builder
+			for _, value := range values {
+				msgBuilder.WriteString(fmt.Sprintf("- %s\n", value))
+			}
+			msgList := msgBuilder.String()
+			return fmt.Errorf("Image denied by OPA rules:\n%s", msgList)
 		}
 	}
-
-	// if len(rs[0].Expressions[0]) > 0 {
-	// 	return fmt.Errorf("Image denied by OPA rules: %s", rs[0].Expressions[0].Value)
-	// }
 
 	return nil
 }
