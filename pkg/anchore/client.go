@@ -14,13 +14,13 @@ import (
 	"k8s.io/klog"
 )
 
-func NewClient(baseUrl, secureToken string) (*AnchoreClient, error) {
+func NewClient(baseUrl, secureToken string) *AnchoreClient {
 	client := AnchoreClient{
 		baseUrl:     baseUrl,
 		secureToken: secureToken,
 	}
 
-	return &client, nil
+	return &client
 }
 
 var (
@@ -82,11 +82,6 @@ func (c *AnchoreClient) getReport(digest string, tag string) (*ScanReport, error
 		return nil, err
 	}
 
-	ret := string(body)
-	ret = strings.Replace(ret, "\t", "  ", -1)
-
-	klog.Infof("[Anchore] Anchore Response Body: %s", ret)
-
 	var result ScanReports
 	err = json.Unmarshal(body, &result)
 	if err != nil {
@@ -121,8 +116,6 @@ func (c *AnchoreClient) getStatus(digest string, tag string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	// foundStatus := findStatus(result)
 
 	if strings.ToLower(result.Status) == "pass" {
 		return true, nil
@@ -165,7 +158,7 @@ func (c *AnchoreClient) addImage(image string) error {
 	return nil
 }
 
-func (c *AnchoreClient) GetImageDigest(image string) (digest string, err error) {
+func (c *AnchoreClient) getImageDigest(image string) (digest string, err error) {
 	err = c.addImage(image)
 	if err != nil {
 		klog.Errorf("[Anchore] addImage error: %s", err)
@@ -187,20 +180,4 @@ func (c *AnchoreClient) GetImageDigest(image string) (digest string, err error) 
 		time.Sleep(time.Second)
 		count++
 	}
-}
-
-func (c *AnchoreClient) CheckImage(image string) (bool, error) {
-	digest, err := c.GetImageDigest(image)
-	if err != nil {
-		return false, fmt.Errorf("Unable to obtain image digest")
-	}
-	return c.getStatus(digest, image)
-}
-
-func (c *AnchoreClient) GetScanReport(image string) (*ScanReport, error) {
-	digest, err := c.GetImageDigest(image)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to obtain image digest")
-	}
-	return c.getReport(digest, image)
 }

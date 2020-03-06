@@ -4,8 +4,24 @@ metadata:
   name: image-scan-rules
   namespace: sysdig-image-scan
 data:
-  rules.rego: "package imageadmission\n\nallow_image {\n\tinput.message == \"hello\"\n}\n\nallow_image
-    {\n\tinput.ScanReport.Status == \"pass\"\n}\n\ndeny_image[msg] {\n\tnot allow_image\n\tmsg
-    := \"Denying images by default\"\n}\n\ndeny_image[msg] {\n\tnot allow_image\n\tmsg
-    := \"Because I want to deny\"\n}\n\ndeny_image[msg] {\n\tnot allow_image\n\tmsg
-    := input.ScanReport.Status\n}"
+  rules.rego: |
+        package imageadmission
+
+        allow_image {
+                input.ScanReport.Passed == true
+        }
+
+        deny_image[msg] {
+                not allow_image
+                msg := "Denying images by default"
+        }
+
+        deny_image[msg] {
+                not allow_image
+                msg := "Because I want to deny"
+        }
+
+        deny_image[msg] {
+                not allow_image
+                msg := input.ScanReport.Status
+        }
