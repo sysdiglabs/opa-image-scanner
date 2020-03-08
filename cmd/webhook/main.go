@@ -26,7 +26,11 @@ import (
 	"image-scan-webhook/pkg/admissionserver"
 	"image-scan-webhook/pkg/anchore"
 	"image-scan-webhook/pkg/imagescanner"
+	"image-scan-webhook/pkg/opa"
+	"image-scan-webhook/pkg/opaimagescanner"
 )
+
+const opaRulesFile = "/tmp/image-scan/rules.rego"
 
 var imageScanner imagescanner.Scanner
 
@@ -46,9 +50,10 @@ func init() {
 
 func main() {
 	klog.Infof("Starting AdmissionServer...")
-	admissionserver.Run(&OPAImageScannerEvaluator{
+	admissionserver.Run(opaimagescanner.NewEvaluator(
 		imageScanner,
 		opaRulesFile,
-	})
+		opa.Evaluate,
+	))
 	klog.Info("Exiting...")
 }

@@ -12,23 +12,21 @@ import (
 	"k8s.io/klog"
 )
 
-func Evaluate(rules string, input interface{}) error {
+func compilleRules(rules string) (*ast.Compiler, error) {
+	klog.Infof("[rego] Input rules:\n%s", rules)
 
 	// Compile the module. The keys are used as identifiers in error messages.
-	compiler, err := ast.CompileModules(map[string]string{
-		"imageadmission.rego": rules,
+	return ast.CompileModules(map[string]string{
+		"rules.rego": rules,
 	})
+}
 
-	if err != nil {
-		return err
-	}
-
+func evaluateRules(compiler *ast.Compiler, input interface{}) (rego.ResultSet, error) {
 	b, err := json.MarshalIndent(input, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Error marshalling input to JSON: %v", err)
+		return nil, fmt.Errorf("Error marshalling input to JSON: %v", err)
 	}
 
-	klog.Infof("[rego] Input rules:\n%s", rules)
 	klog.Infof("[rego] Input is:\n%s", string(b))
 
 	ctx := context.Background()
@@ -39,13 +37,10 @@ func Evaluate(rules string, input interface{}) error {
 	)
 
 	// Run evaluation.
-	rs, err := rego.Eval(ctx)
+	return rego.Eval(ctx)
+}
 
-	if err != nil {
-		return fmt.Errorf("Rego evaluation error: %v", err)
-		// Handle error.
-	}
-
+func evaluateResults(rs rego.ResultSet) error {
 	// Inspect results.
 	klog.Infof("[rego] len: %d", len(rs))
 
@@ -75,4 +70,19 @@ func Evaluate(rules string, input interface{}) error {
 	}
 
 	return nil
+}
+
+func Evaluate(rules string, input interface{}) error {
+
+	compiler, err := compilleRules(rules)
+	if err != nil {
+		return fmt.Errorf("Rule compilation error:\n%v", err)
+	}
+
+	rs, err := evaluateRules(compiler, input)
+	if err != nil {
+		return fmt.Errorf("Rego evaluation error: %v", err)
+	}
+
+	return evaluateResults(rs)
 }

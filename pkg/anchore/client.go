@@ -14,8 +14,8 @@ import (
 	"k8s.io/klog"
 )
 
-func NewClient(baseUrl, secureToken string) *AnchoreClient {
-	client := AnchoreClient{
+func NewClient(baseUrl, secureToken string) *anchoreClient {
+	client := anchoreClient{
 		baseUrl:     baseUrl,
 		secureToken: secureToken,
 	}
@@ -35,7 +35,7 @@ var (
 
 const errNotFound = "response from Anchore: 404"
 
-func (c *AnchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
+func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
 	fullURL := c.baseUrl + path
 
 	bodyParamJson, err := json.Marshal(bodyParams)
@@ -65,7 +65,7 @@ func (c *AnchoreClient) anchoreRequest(path string, bodyParams map[string]string
 	return bodyText, nil
 }
 
-func (c *AnchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
+func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
 	body, err := c.anchoreRequest(path, nil, "GET")
 
@@ -82,7 +82,7 @@ func (c *AnchoreClient) getReport(digest string, tag string) (*ScanReport, error
 		return nil, err
 	}
 
-	var result ScanReports
+	var result scanReports
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		klog.Errorf("[Anchore] Body unmarshall error %v", err)
@@ -110,7 +110,7 @@ func (c *AnchoreClient) getReport(digest string, tag string) (*ScanReport, error
 	return &result[0][digest][fullTag][0], nil
 }
 
-func (c *AnchoreClient) getStatus(digest string, tag string) (bool, error) {
+func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
 	result, err := c.getReport(digest, tag)
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (c *AnchoreClient) getStatus(digest string, tag string) (bool, error) {
 	}
 }
 
-func (c *AnchoreClient) getDigest(imageRef string) (string, error) {
+func (c *anchoreClient) getDigest(imageRef string) (string, error) {
 	// Tag or repo??
 	params := map[string]string{
 		"tag":     imageRef,
@@ -137,7 +137,7 @@ func (c *AnchoreClient) getDigest(imageRef string) (string, error) {
 		return "", err
 	}
 
-	var images []Image
+	var images []imageInfo
 	err = json.Unmarshal(body, &images)
 
 	if err != nil {
@@ -147,7 +147,7 @@ func (c *AnchoreClient) getDigest(imageRef string) (string, error) {
 	return images[0].ImageDigest, nil
 }
 
-func (c *AnchoreClient) addImage(image string) error {
+func (c *anchoreClient) addImage(image string) error {
 	params := map[string]string{"tag": image}
 	_, err := c.anchoreRequest("/images", params, "POST")
 	if err != nil {
@@ -158,7 +158,7 @@ func (c *AnchoreClient) addImage(image string) error {
 	return nil
 }
 
-func (c *AnchoreClient) getImageDigest(image string) (digest string, err error) {
+func (c *anchoreClient) getImageDigest(image string) (digest string, err error) {
 	err = c.addImage(image)
 	if err != nil {
 		klog.Errorf("[Anchore] addImage error: %s", err)

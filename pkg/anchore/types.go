@@ -1,15 +1,20 @@
 package anchore
 
-type AnchoreClient struct {
+import "image-scan-webhook/pkg/imagescanner"
+
+type anchoreClient struct {
 	baseUrl     string
 	secureToken string
 }
 
-type Image struct {
+// Verify that anchoreClient implements imagescanner.Scanner
+var _ imagescanner.Scanner = (*anchoreClient)(nil)
+
+type imageInfo struct {
 	ImageDigest string `json:"imageDigest"`
 }
 
-type ScanReports []map[string]map[string][]ScanReport
+type scanReports []map[string]map[string][]ScanReport
 
 type ScanReport struct {
 	Status         string

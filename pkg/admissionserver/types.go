@@ -25,6 +25,13 @@ type admissionHook struct {
 	initialized       bool
 }
 
+type mutationHook struct {
+	evaluator         AdmissionEvaluator
+	reservationClient dynamic.ResourceInterface
+	lock              sync.RWMutex
+	initialized       bool
+}
+
 // toAdmissionResponse is a helper function to create an AdmissionResponse
 // with an embedded error
 func toAdmissionResponse(err error) *v1beta1.AdmissionResponse {

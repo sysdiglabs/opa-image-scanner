@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (c *AnchoreClient) StartScan(imageAndTag string) (string, error) {
+func (c *anchoreClient) StartScan(imageAndTag string) (string, error) {
 	if digest, err := c.getImageDigest(imageAndTag); err != nil {
 		return "", fmt.Errorf("unable to obtain image digest: %v", err)
 	} else {
@@ -15,7 +15,7 @@ func (c *AnchoreClient) StartScan(imageAndTag string) (string, error) {
 
 }
 
-func (c *AnchoreClient) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {
+func (c *anchoreClient) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {
 	report, err := c.getReport(imageDigest, imageAndTag)
 	if err != nil {
 		return nil, fmt.Errorf("unable to obtain scan report: %v", err)
