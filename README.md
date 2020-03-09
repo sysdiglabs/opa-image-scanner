@@ -79,7 +79,28 @@ deny_image[msg] {
 }
 ```
 
-#### Always allow images coming from a whitelisted registry
+
+#### Deny images from untrusted registries or with vulnerabilities
+
+```
+package imageadmission
+
+allowedRegistry := "mysaferegistry.io/"
+
+
+allow_image {
+  input.ScanReport.Status == "accepted"
+  startswith(input.ScanReport.ImageAndTag, allowedRegistry)
+
+}
+
+deny_image[msg] {
+  not allow_image
+  msg := sprintf("Denying images by default. Status: %s", [input.ScanReport.Status])
+}
+```
+
+#### Always allow images coming from a trusted registry, and also "safe" images
 
 ```
 package imageadmission
