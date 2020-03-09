@@ -18,6 +18,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -33,6 +34,7 @@ import (
 const opaRulesFile = "/tmp/image-scan/rules.rego"
 
 var imageScanner imagescanner.Scanner
+var opaEvaluator opa.OPAEvaluator
 
 func init() {
 	baseUrl := strings.TrimSpace(os.Getenv("SYSDIG_SECURE_URL"))
@@ -46,14 +48,21 @@ func init() {
 	}
 
 	imageScanner = anchore.NewClient(baseUrl, token)
+
+	opaEvaluator = opa.NewEvaluator()
+}
+
+func getOPARules() (string, error) {
+	regoFileContents, err := ioutil.ReadFile(opaRulesFile)
+	if err != nil {
+		return "", err
+	} else {
+		return string(regoFileContents), nil
+	}
 }
 
 func main() {
 	klog.Infof("Starting AdmissionServer...")
-	admissionserver.Run(opaimagescanner.NewEvaluator(
-		imageScanner,
-		opaRulesFile,
-		opa.Evaluate,
-	))
+	admissionserver.Run(opaimagescanner.NewEvaluator(imageScanner, opaEvaluator, getOPARules))
 	klog.Info("Exiting...")
 }

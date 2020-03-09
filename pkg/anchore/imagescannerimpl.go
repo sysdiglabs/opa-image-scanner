@@ -16,13 +16,21 @@ func (c *anchoreClient) StartScan(imageAndTag string) (string, error) {
 }
 
 func (c *anchoreClient) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {
-	report, err := c.getReport(imageDigest, imageAndTag)
+	innerReport, err := c.getReport(imageDigest, imageAndTag)
 	if err != nil {
 		return nil, fmt.Errorf("unable to obtain scan report: %v", err)
 	}
 
-	return &imagescanner.ScanReport{
-		Passed:      strings.ToLower(report.Status) == "pass",
-		InnerReport: report,
-	}, nil
+	report := &imagescanner.ScanReport{
+		ImageAndTag: imageAndTag,
+		InnerReport: innerReport,
+	}
+
+	if strings.ToLower(innerReport.Status) == "pass" {
+		report.Status = imagescanner.StatusAccepted
+	} else {
+		report.Status = imagescanner.StatusRejected
+	}
+
+	return report, nil
 }

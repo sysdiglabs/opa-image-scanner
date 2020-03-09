@@ -8,20 +8,19 @@ data:
         package imageadmission
 
         allow_image {
-                input.ScanReport.Passed == true
+                input.ScanReport.Status == "accepted"
+        }
+
+        allow_image {
+                input.ScanReport.Status == "report_not_available"
+        }
+
+        deny_image[msg] {
+                input.ScanReport.Status == "report_not_available"
+                msg := "Image scan in progress, please try again"
         }
 
         deny_image[msg] {
                 not allow_image
-                msg := "Denying images by default"
-        }
-
-        deny_image[msg] {
-                not allow_image
-                msg := "Because I want to deny"
-        }
-
-        deny_image[msg] {
-                not allow_image
-                msg := input.ScanReport.Status
+                msg := sprintf("Denying images by default. Status: %s", [input.ScanReport.Status])
         }

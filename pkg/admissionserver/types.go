@@ -1,32 +1,23 @@
 package admissionserver
 
 import (
+	"image-scan-webhook/pkg/opaimagescanner"
 	"sync"
 
 	"k8s.io/api/admission/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/dynamic"
 )
 
-type AdmissionEvaluationContext struct {
-	AdmissionRequest *v1beta1.AdmissionRequest
-	PodObject        *corev1.Pod
-}
-
-type AdmissionEvaluator interface {
-	Evaluate(c *AdmissionEvaluationContext) (accepted bool, errors []string)
-}
-
 type admissionHook struct {
-	evaluator         AdmissionEvaluator
+	evaluator         opaimagescanner.AdmissionEvaluator
 	reservationClient dynamic.ResourceInterface
 	lock              sync.RWMutex
 	initialized       bool
 }
 
 type mutationHook struct {
-	evaluator         AdmissionEvaluator
+	evaluator         opaimagescanner.AdmissionEvaluator
 	reservationClient dynamic.ResourceInterface
 	lock              sync.RWMutex
 	initialized       bool

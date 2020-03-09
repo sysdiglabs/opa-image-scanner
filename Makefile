@@ -1,7 +1,14 @@
 IMAGE=airadier/image-scan-webhook
 
-all:
+.PHONY: build test
+
+all: build test
+
+build:
 	go build ./...
+
+test:
+	go test ./...
 
 cert: cert.crt secret-tls.yaml
 
@@ -22,3 +29,4 @@ docker:
 
 push: 
 	docker push ${IMAGE}
+

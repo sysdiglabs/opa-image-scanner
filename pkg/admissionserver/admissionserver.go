@@ -1,8 +1,12 @@
 package admissionserver
 
-import genericadmissionserver "github.com/openshift/generic-admission-server/pkg/cmd"
+import (
+	"image-scan-webhook/pkg/opaimagescanner"
 
-func Run(e AdmissionEvaluator) {
+	genericadmissionserver "github.com/openshift/generic-admission-server/pkg/cmd"
+)
+
+func Run(e opaimagescanner.AdmissionEvaluator) {
 	genericadmissionserver.RunAdmissionServer(
 		&admissionHook{evaluator: e},
 	)

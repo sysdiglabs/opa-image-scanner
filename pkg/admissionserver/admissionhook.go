@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"k8s.io/api/admission/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
@@ -31,25 +30,22 @@ func (a *admissionHook) ValidatingResource() (plural schema.GroupVersionResource
 func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
 	klog.Info("[admission-server] validating Pod admission request")
 
-	if pod, err := validatePod(admissionSpec); err != nil {
+	if err := validatePod(admissionSpec); err != nil {
 		klog.Errorf("[admission-server] %v", err)
 		return toAdmissionResponse(err)
 	} else {
 
-		klog.Info("[admission-server] evaluating admission of pod: " + pod.Name)
+		klog.Info("[admission-server] evaluating admission of pod: " + admissionSpec.Name)
 
-		allowed, denyReasons := a.evaluator.Evaluate(&AdmissionEvaluationContext{
-			AdmissionRequest: admissionSpec,
-			PodObject:        pod,
-		})
+		allowed, denyReasons := a.evaluator.Evaluate(admissionSpec)
 
 		if allowed {
-			klog.Infof("[admission-server] pod accepted: %s", pod.Name)
+			klog.Infof("[admission-server] pod accepted: %s", admissionSpec.Name)
 			return &v1beta1.AdmissionResponse{Allowed: true}
 		} else {
 			reasons := strings.Join(denyReasons, "\n")
 
-			klog.Infof("[admission-server] pod rejected: %s. Reasons:\n%s", pod.Name, reasons)
+			klog.Infof("[admission-server] pod rejected: %s. Reasons:\n%s", admissionSpec.Name, reasons)
 
 			//TODO: More info? Annotations?
 			reviewResponse := v1beta1.AdmissionResponse{}
@@ -61,19 +57,12 @@ func (a *admissionHook) Validate(admissionSpec *v1beta1.AdmissionRequest) *v1bet
 
 }
 
-func validatePod(admissionSpec *v1beta1.AdmissionRequest) (*corev1.Pod, error) {
+func validatePod(admissionSpec *v1beta1.AdmissionRequest) error {
 	podResource := metav1.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
 
 	if admissionSpec.Resource != podResource {
-		return nil, fmt.Errorf("expected resource to be %s", podResource)
+		return fmt.Errorf("expected resource to be %s", podResource)
 	}
 
-	raw := admissionSpec.Object.Raw
-	pod := corev1.Pod{}
-	deserializer := codecs.UniversalDeserializer()
-	if _, _, err := deserializer.Decode(raw, nil, &pod); err != nil {
-		return nil, err
-	}
-
-	return &pod, nil
+	return nil
 }
