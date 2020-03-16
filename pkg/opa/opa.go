@@ -12,13 +12,14 @@ import (
 	"k8s.io/klog"
 )
 
-func compilleRules(rules string) (*ast.Compiler, error) {
-	klog.V(3).Infof("[rego] Input rules:\n%s", rules)
+func (o *opaEvaluator) Evaluate(query, rules string, input interface{}) error {
 
-	// Compile the module. The keys are used as identifiers in error messages.
-	return ast.CompileModules(map[string]string{
-		"rules.rego": rules,
-	})
+	rs, err := evaluateRules(query, rules, input)
+	if err != nil {
+		return fmt.Errorf("Rego evaluation error: %v", err)
+	}
+
+	return evaluateResults(rs)
 }
 
 func evaluateRules(query, rules string, input interface{}) (rego.ResultSet, error) {
@@ -44,6 +45,15 @@ func evaluateRules(query, rules string, input interface{}) (rego.ResultSet, erro
 
 	// Run evaluation.
 	return rego.Eval(ctx)
+}
+
+func compilleRules(rules string) (*ast.Compiler, error) {
+	klog.V(3).Infof("[rego] Input rules:\n%s", rules)
+
+	// Compile the module. The keys are used as identifiers in error messages.
+	return ast.CompileModules(map[string]string{
+		"rules.rego": rules,
+	})
 }
 
 func evaluateResults(rs rego.ResultSet) error {
@@ -76,14 +86,4 @@ func evaluateResults(rs rego.ResultSet) error {
 	}
 
 	return nil
-}
-
-func (o *opaEvaluator) Evaluate(query, rules string, input interface{}) error {
-
-	rs, err := evaluateRules(query, rules, input)
-	if err != nil {
-		return fmt.Errorf("Rego evaluation error: %v", err)
-	}
-
-	return evaluateResults(rs)
 }

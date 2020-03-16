@@ -2,25 +2,17 @@ package admissionserver
 
 import (
 	"image-scan-webhook/pkg/opaimagescanner"
-	"sync"
 
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/dynamic"
 )
 
 type admissionHook struct {
-	evaluator         opaimagescanner.AdmissionEvaluator
-	reservationClient dynamic.ResourceInterface
-	lock              sync.RWMutex
-	initialized       bool
+	evaluator opaimagescanner.AdmissionEvaluator
 }
 
 type mutationHook struct {
-	evaluator         opaimagescanner.AdmissionEvaluator
-	reservationClient dynamic.ResourceInterface
-	lock              sync.RWMutex
-	initialized       bool
+	evaluator opaimagescanner.AdmissionEvaluator
 }
 
 // toAdmissionResponse is a helper function to create an AdmissionResponse

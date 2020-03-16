@@ -22,6 +22,7 @@ type GetReportReturn struct {
 	Error  error
 }
 
+//TODO: Check go-mock
 type mockImageScanner struct {
 	T *testing.T
 

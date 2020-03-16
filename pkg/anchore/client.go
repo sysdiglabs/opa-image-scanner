@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"time"
 
 	"k8s.io/klog"
 )
@@ -18,51 +17,30 @@ func NewClient(baseUrl, secureToken string) *anchoreClient {
 	client := anchoreClient{
 		baseUrl:     baseUrl,
 		secureToken: secureToken,
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+			},
+		},
 	}
 
 	return &client
 }
 
-var (
-	transCfg = &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
-	}
-
-	client = &http.Client{
-		Transport: transCfg,
-	}
-)
-
 const errNotFound = "response from Anchore: 404"
 
-func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
-	fullURL := c.baseUrl + path
-
-	bodyParamJson, err := json.Marshal(bodyParams)
-	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(bodyParamJson))
-	if err != nil {
-		klog.Fatal(err)
-	}
-
-	req.SetBasicAuth(c.secureToken, "")
-	klog.Infof("[Anchore] Sending request to %s, with params %s", fullURL, bodyParams)
-	req.Header.Add("Content-Type", "application/json")
-
-	resp, err := client.Do(req)
+func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
+	result, err := c.getReport(digest, tag)
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
+		return false, err
 	}
 
-	bodyText, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
+	if strings.ToLower(result.Status) == "pass" {
+		return true, nil
+	} else {
+		return false, fmt.Errorf("Scan result is FAILED")
 	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("response from Anchore: %d", resp.StatusCode)
-	}
-	return bodyText, nil
 }
 
 func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
@@ -110,20 +88,6 @@ func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error
 	return &result[0][digest][fullTag][0], nil
 }
 
-func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
-	result, err := c.getReport(digest, tag)
-
-	if err != nil {
-		return false, err
-	}
-
-	if strings.ToLower(result.Status) == "pass" {
-		return true, nil
-	} else {
-		return false, fmt.Errorf("Scan result is FAILED")
-	}
-}
-
 func (c *anchoreClient) getDigest(imageRef string) (string, error) {
 	// Tag or repo??
 	params := map[string]string{
@@ -144,6 +108,14 @@ func (c *anchoreClient) getDigest(imageRef string) (string, error) {
 		return "", fmt.Errorf("failed to unmarshal JSON from response: %v", err)
 	}
 
+	if len(images) != 1 {
+		return "", fmt.Errorf("expected 1 image in /images response")
+	}
+
+	if images[0].ImageDigest == "" {
+		return "", fmt.Errorf("no image digest found")
+	}
+
 	return images[0].ImageDigest, nil
 }
 
@@ -158,26 +130,36 @@ func (c *anchoreClient) addImage(image string) error {
 	return nil
 }
 
-func (c *anchoreClient) getImageDigest(image string) (digest string, err error) {
-	err = c.addImage(image)
+func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
+	fullURL := c.baseUrl + path
+
+	var bodyParamJson []byte = nil
+	if bodyParams != nil {
+		bodyParamJson, _ = json.Marshal(bodyParams)
+	}
+
+	req, err := http.NewRequest(method, fullURL, bytes.NewBuffer(bodyParamJson))
 	if err != nil {
-		klog.Errorf("[Anchore] addImage error: %s", err)
-		return
+		klog.Fatal(err)
 	}
 
-	count := 0
-	for {
-		digest, err = c.getDigest(image)
-		if err == nil {
-			return
-		}
+	req.SetBasicAuth(c.secureToken, "")
+	klog.Infof("[Anchore] Sending request to %s, with params %s", fullURL, bodyParams)
+	req.Header.Add("Content-Type", "application/json")
 
-		klog.Errorf("[Anchore] getDigest error: %s", err)
-		if count >= 5 {
-			return
-		}
+	resp, err := c.httpClient.Do(req)
 
-		time.Sleep(time.Second)
-		count++
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
 	}
+
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to complete request to Anchore: %v", err)
+	}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("response from Anchore: %d", resp.StatusCode)
+	}
+	return bodyText, nil
 }

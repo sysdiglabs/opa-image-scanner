@@ -1,10 +1,14 @@
 package anchore
 
-import "image-scan-webhook/pkg/imagescanner"
+import (
+	"image-scan-webhook/pkg/imagescanner"
+	"net/http"
+)
 
 type anchoreClient struct {
 	baseUrl     string
 	secureToken string
+	httpClient  *http.Client
 }
 
 // Verify that anchoreClient implements imagescanner.Scanner
