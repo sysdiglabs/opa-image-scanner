@@ -119,9 +119,13 @@ func TestDummy(t *testing.T) {
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, err := evaluator.Evaluate(a)
+	accepted, digestMappings, _, err := evaluator.Evaluate(a)
 	if !accepted {
 		t.Error(err)
+	}
+
+	if digestMappings["mysaferegistry.io/container-image:1.01"] != "TestDigest" {
+		t.Fatalf("Unexpected digest mapping: %v", digestMappings)
 	}
 
 	if !scanner.StartScanCalled {
@@ -144,7 +148,7 @@ func TestNilAdmissionReview(t *testing.T) {
 
 	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
 
-	accepted, err := evaluator.Evaluate(nil)
+	accepted, _, _, err := evaluator.Evaluate(nil)
 	if accepted || len(err) != 1 || err[0] != "Admission request is <nil>" {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -163,7 +167,7 @@ func TestEmptyAdmissionReview(t *testing.T) {
 	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
 	a := &v1beta1.AdmissionRequest{}
 
-	accepted, err := evaluator.Evaluate(a)
+	accepted, _, _, err := evaluator.Evaluate(a)
 	if accepted || len(err) != 1 || err[0] != "Pod data is <nil>" {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -183,7 +187,7 @@ func TestStartScanFails(t *testing.T) {
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, err := evaluator.Evaluate(a)
+	accepted, _, _, err := evaluator.Evaluate(a)
 	if !accepted {
 		t.Error(err)
 	}
@@ -218,9 +222,13 @@ func TestGetReportFails(t *testing.T) {
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, err := evaluator.Evaluate(a)
+	accepted, digestMappings, _, err := evaluator.Evaluate(a)
 	if !accepted {
 		t.Error(err)
+	}
+
+	if digestMappings["mysaferegistry.io/container-image:1.01"] != "sha256:somedigest" {
+		t.Fatalf("Unexpected digest mapping: %v", digestMappings)
 	}
 
 	if !scanner.StartScanCalled {
@@ -267,7 +275,7 @@ func TestEvaluationRejects(t *testing.T) {
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, err := evaluator.Evaluate(a)
+	accepted, _, _, err := evaluator.Evaluate(a)
 	if accepted || len(err) != 1 || !strings.Contains(err[0], "Reject this container") {
 		t.Errorf("Unexpected evaluation error:\n%v", err)
 	}

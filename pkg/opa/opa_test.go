@@ -100,7 +100,7 @@ func TestEvaluateAdmissionReviewAllowByNamespace(t *testing.T) {
 	input.ScanReport = &imagescanner.ScanReport{Status: "rejected"}
 
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, input.AdmissionRequest)
 	}
@@ -134,7 +134,7 @@ func TestEvaluateAdmissionReviewDenyByNamespace(t *testing.T) {
 	input.ScanReport = &imagescanner.ScanReport{Status: "accepted"}
 
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, input.AdmissionRequest)
 	}
@@ -173,7 +173,7 @@ func TestEvaluateAdmissionReviewAllowByPrefix(t *testing.T) {
 	}
 
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, input.AdmissionRequest)
 	}
@@ -212,7 +212,7 @@ func TestEvaluateAdmissionReviewDenyByPrefix(t *testing.T) {
 	}
 
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, input.AdmissionRequest)
 	}

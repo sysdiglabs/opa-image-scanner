@@ -8,6 +8,7 @@ import (
 
 func Run(e opaimagescanner.AdmissionEvaluator) {
 	genericadmissionserver.RunAdmissionServer(
-		&admissionHook{evaluator: e},
+		//	&admissionHook{evaluator: e},
+		&mutationHook{evaluator: e},
 	)
 }

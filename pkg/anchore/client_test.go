@@ -66,7 +66,7 @@ func TestAnchoreRequest(t *testing.T) {
 	client := NewClient("http://mock", "mockToken")
 	client.httpClient, roundTripper = getMockClient(`Sample body`, 200)
 
-	_, err := client.anchoreRequest("/somepath", map[string]string{
+	_, err := client.anchoreRequest("/somepath", map[string]interface{}{
 		"param1": "value1", "param2": "value"}, "GET")
 
 	if string(roundTripper.RequestBody) != `{"param1":"value1","param2":"value"}` {
@@ -94,7 +94,7 @@ func TestAnchoreRequestError(t *testing.T) {
 	client := NewClient("http://mock", "mockToken")
 	client.httpClient, _ = getMockClient(`Sample body`, 500)
 
-	_, err := client.anchoreRequest("/somepath", map[string]string{}, "GET")
+	_, err := client.anchoreRequest("/somepath", map[string]interface{}{}, "GET")
 
 	if err == nil || err.Error() != "response from Anchore: 500" {
 		t.Fatalf("Error: %v", err)
@@ -104,9 +104,9 @@ func TestAnchoreRequestError(t *testing.T) {
 func TestAddImage(t *testing.T) {
 	var roundTripper *MockRoundTripper
 	client := NewClient("http://mock", "mockToken")
-	client.httpClient, roundTripper = getMockClient("", 200)
+	client.httpClient, roundTripper = getMockClient(`[{"imageDigest": "mockDigest"}]`, 200)
 
-	err := client.addImage("mockTag")
+	digest, err := client.addImage("mockTag")
 
 	if err != nil {
 		t.Fatalf("Error: %v", err)
@@ -123,52 +123,17 @@ func TestAddImage(t *testing.T) {
 	if string(roundTripper.RequestPath) != `/images` {
 		t.Fatalf("Wrong path: %s", roundTripper.RequestPath)
 	}
-}
-
-func TestAddImageError(t *testing.T) {
-	client := NewClient("http://mock", "mockToken")
-	client.httpClient, _ = getMockClient("", 500)
-
-	err := client.addImage("mockTag")
-
-	if err == nil || err.Error() != "response from Anchore: 500" {
-		t.Fatalf("Error: %v", err)
-	}
-}
-
-func TestGetDigest(t *testing.T) {
-	var roundTripper *MockRoundTripper
-	client := NewClient("http://mock", "mockToken")
-	client.httpClient, roundTripper = getMockClient(`[{"imageDigest": "mockDigest"}]`, 200)
-
-	digest, err := client.getDigest("mockTag")
-
-	if err != nil {
-		t.Fatalf("Error: %v", err)
-	}
-
-	if string(roundTripper.RequestBody) != `{"history":"true","tag":"mockTag"}` {
-		t.Fatalf("Wrong request: %s", string(roundTripper.RequestBody))
-	}
-
-	if roundTripper.RequestMethod != "GET" {
-		t.Fatalf("Wrong method: %s", roundTripper.RequestMethod)
-	}
-
-	if string(roundTripper.RequestPath) != `/images` {
-		t.Fatalf("Wrong path: %s", roundTripper.RequestPath)
-	}
 
 	if digest != "mockDigest" {
 		t.Fatalf("Wrong digest: %s", digest)
 	}
 }
 
-func TestGetDigestError(t *testing.T) {
+func TestAddImageError(t *testing.T) {
 	client := NewClient("http://mock", "mockToken")
 	client.httpClient, _ = getMockClient("", 500)
 
-	_, err := client.getDigest("mockTag")
+	_, err := client.addImage("mockTag")
 
 	if err == nil || err.Error() != "response from Anchore: 500" {
 		t.Fatalf("Error: %v", err)

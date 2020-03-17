@@ -11,7 +11,7 @@ import (
 )
 
 //Implementation of AdmissionEvaluator interface
-func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, errors []string) {
+func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string) {
 
 	accepted = true
 	regoRules, err := e.getOPARulesFunc()
@@ -20,29 +20,33 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 	}
 
 	if a == nil {
-		return false, []string{"Admission request is <nil>"}
+		return false, nil, nil, []string{"Admission request is <nil>"}
 	}
 
-	pod, err := getPod(a)
+	pod, err = getPod(a)
 	if err != nil {
-		return false, []string{err.Error()}
+		return false, nil, nil, []string{err.Error()}
 	}
 
+	digestMappings = make(map[string]string)
 	//TODO: Run in parallel and combine multiple containers output
 	for _, container := range pod.Spec.Containers {
 
 		klog.V(3).Infof("Checking container '%s' image '%s'", container.Name, container.Image)
 
-		if containerAccepted, containerErrors := e.evaluateContainer(a, pod, &container, regoRules); !containerAccepted {
+		containerAccepted, digest, containerErrors := e.evaluateContainer(a, pod, &container, regoRules)
+		if !containerAccepted {
 			accepted = false
 			errors = append(errors, containerErrors...)
 		}
+
+		digestMappings[container.Image] = digest
 	}
 
-	return accepted, errors
+	return
 
 }
-func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules string) (accepted bool, errors []string) {
+func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules string) (accepted bool, digest string, errors []string) {
 
 	var report *imagescanner.ScanReport
 
@@ -71,10 +75,10 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 	}
 
 	if err := e.opaEvaluator.Evaluate(regoQuery, regoRules, opaInput); err != nil {
-		return false, []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
+		return false, "", []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
 	}
 
-	return true, nil
+	return true, digest, nil
 
 }
 

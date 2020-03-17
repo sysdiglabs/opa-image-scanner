@@ -16,7 +16,7 @@ type OPAInput struct {
 }
 
 type AdmissionEvaluator interface {
-	Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, errors []string)
+	Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string)
 }
 
 type GetOPARulesFunction func() (string, error)

@@ -4,32 +4,18 @@ import (
 	"fmt"
 	"image-scan-webhook/pkg/imagescanner"
 	"strings"
-	"time"
 
 	"k8s.io/klog"
 )
 
 func (c *anchoreClient) StartScan(imageAndTag string) (digest string, err error) {
-	err = c.addImage(imageAndTag)
+	digest, err = c.addImage(imageAndTag)
 	if err != nil {
 		klog.Errorf("[Anchore] addImage error: %s", err)
 		return "", fmt.Errorf("unable to obtain image digest: %v", err)
 	}
 
-	count := 0
-	for {
-		digest, err = c.getDigest(imageAndTag)
-		if err == nil {
-			return
-		}
-
-		if count >= 5 {
-			return "", fmt.Errorf("timeout obtaining image digest. Last error: %v", err)
-		}
-
-		time.Sleep(time.Second)
-		count++
-	}
+	return
 }
 
 func (c *anchoreClient) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {

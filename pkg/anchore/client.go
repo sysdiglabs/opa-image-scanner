@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"k8s.io/klog"
 )
@@ -44,6 +45,11 @@ func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
 }
 
 func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
+
+	if strings.Contains(tag, "@sha256:") {
+		tag = strings.Split(tag, "@")[0] + ":by-digest-unknown-tag"
+	}
+
 	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
 	body, err := c.anchoreRequest(path, nil, "GET")
 
@@ -88,16 +94,22 @@ func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error
 	return &result[0][digest][fullTag][0], nil
 }
 
-func (c *anchoreClient) getDigest(imageRef string) (string, error) {
-	// Tag or repo??
-	params := map[string]string{
-		"tag":     imageRef,
-		"history": "true",
+func (c *anchoreClient) addImage(image string) (string, error) {
+
+	var params map[string]interface{}
+	if strings.Contains(image, "@sha256:") {
+		params = map[string]interface{}{
+			"digest":     image,
+			"tag":        strings.Split(image, "@")[0] + ":by-digest-unknown-tag",
+			"created_at": time.Now(),
+		}
+	} else {
+		params = map[string]interface{}{"tag": image}
+
 	}
 
-	body, err := c.anchoreRequest("/images", params, "GET")
+	body, err := c.anchoreRequest("/images", params, "POST")
 	if err != nil {
-		klog.Errorf("[Anchore] %v", err)
 		return "", err
 	}
 
@@ -116,21 +128,11 @@ func (c *anchoreClient) getDigest(imageRef string) (string, error) {
 		return "", fmt.Errorf("no image digest found")
 	}
 
+	klog.Infof("[Anchore] Added image to Anchore Engine: %s", image)
 	return images[0].ImageDigest, nil
 }
 
-func (c *anchoreClient) addImage(image string) error {
-	params := map[string]string{"tag": image}
-	_, err := c.anchoreRequest("/images", params, "POST")
-	if err != nil {
-		return err
-	}
-
-	klog.Infof("[Anchore] Added image to Anchore Engine: %s", image)
-	return nil
-}
-
-func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]string, method string) ([]byte, error) {
+func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]interface{}, method string) ([]byte, error) {
 	fullURL := c.baseUrl + path
 
 	var bodyParamJson []byte = nil
@@ -144,7 +146,7 @@ func (c *anchoreClient) anchoreRequest(path string, bodyParams map[string]string
 	}
 
 	req.SetBasicAuth(c.secureToken, "")
-	klog.Infof("[Anchore] Sending request to %s, with params %s", fullURL, bodyParams)
+	klog.Infof("[Anchore] Sending %s request to %s, with params %s", method, fullURL, bodyParams)
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
