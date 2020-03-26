@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}-rules
+  labels:
+    {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
+data:
+  rules.rego: |
+        package imageadmission
+
+        allow_image {
+                input.ScanReport.Status == "accepted"
+        }
+
+        allow_image {
+                input.ScanReport.Status == "report_not_available"
+        }
+
+        deny_image[msg] {
+                input.ScanReport.Status == "report_not_available"
+                msg := "Image scan in progress, please try again"
+        }
+
+        deny_image[msg] {
+                not allow_image
+                msg := sprintf("Denying images by default. Status: %s", [input.ScanReport.Status])
+        }

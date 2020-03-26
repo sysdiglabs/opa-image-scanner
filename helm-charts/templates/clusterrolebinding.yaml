@@ -1,0 +1,15 @@
+# Allow delegate authentication and authorization to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}-auth-delegator
+  labels:
+    {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: system:auth-delegator
+subjects:
+- kind: ServiceAccount
+  name: {{ include "sysdig-image-scanner.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}

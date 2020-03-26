@@ -26,6 +26,7 @@ metadata:
   labels:
     app: sysdig-image-scan
   name: sysdig-image-scan
+  namespace: sysdig-image-scan
 spec:
   replicas: 1
   selector:

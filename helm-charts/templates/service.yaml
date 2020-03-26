@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}
+  labels:
+    {{- include "sysdig-image-scanner.labels" . | nindent 4 }}
+spec:
+  ports:
+  - name: webhook-port
+    port: {{ .Values.service.port }}
+    targetPort: {{ .Values.service.port }}
+    protocol: TCP
+  selector:
+    {{- include "sysdig-image-scanner.selectorLabels" . | nindent 4 }}

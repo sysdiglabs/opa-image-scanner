@@ -1,0 +1,56 @@
+{{/* 
+We need to put all resources that need certificate or CA Bundle together, 
+so the template is executed just once
+ */}}
+{{- $certString := include "sysdig-image-scanner.gen-certs" . -}}
+{{- $certList := split "$" $certString -}}
+---
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.admission.sysdig.com
+  labels:
+    {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
+spec:
+  group: admission.sysdig.com
+  version: v1beta1
+  groupPriorityMinimum: 10
+  versionPriority: 10
+  service:
+    namespace: {{ .Release.Namespace }}
+    name: {{ include "sysdig-image-scanner.name" . }}
+    port: {{ .Values.service.port }}
+  caBundle: {{ $certList._2 }}
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}-admission
+webhooks:
+- name: imagechecks.admission.sysdig.com
+  rules:
+  - apiGroups: [""]
+    apiVersions: ["v1"]
+    operations: ["CREATE"]
+    resources: ["pods"]
+    scope: "*"
+  clientConfig:
+    service:
+      namespace: default
+      name: kubernetes
+      path: /apis/admission.sysdig.com/v1beta1/imagechecks
+    caBundle: {{ $certList._2 }}
+  admissionReviewVersions: ["v1beta1"]
+  sideEffects: Some
+  timeoutSeconds: 10
+  reinvocationPolicy: IfNeeded
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}-tls
+  labels:
+    {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
+data:
+  tls.crt: {{ $certList._0 }}
+  tls.key: {{ $certList._1 }}

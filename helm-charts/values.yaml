@@ -1,0 +1,47 @@
+# Default values for sysdig-image-scanner.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: airadier/image-scan-webhook
+  pullPolicy: Always
+
+service:
+  port: 8443
+
+serviceAccount:
+  name:
+
+sysdigSecureApiUrl: https://api.sysdigcloud.com
+sysdigSecureToken: <Sysdig-Secure-Secret-Token>
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+podSecurityContext: 
+  fsGroup: 1000
+
+securityContext: 
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

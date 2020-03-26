@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sysdig-image-scanner.name" . }}
+  labels:
+    {{- include "sysdig-image-scanner.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "sysdig-image-scanner.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sysdig-image-scanner.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sysdig-image-scanner.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-webhook
+          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          args:
+            - --secure-port={{ .Values.service.port }}
+            - --tls-cert-file
+            - /cert/tls.crt
+            - --tls-private-key-file
+            - /cert/tls.key
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: image-scan-config
+            - secretRef:
+                name: sysdig-secure-token
+          volumeMounts:
+            - name: cert
+              mountPath: /cert
+              readOnly: true
+            - name: rules
+              mountPath: /tmp/image-scan
+              readOnly: true
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "sysdig-image-scanner.name" . }}
+            - secretRef:
+                name: {{ include "sysdig-image-scanner.name" . }}-token
+          volumeMounts:
+            - name: cert
+              mountPath: /cert
+              readOnly: true
+            - name: rules
+              mountPath: /tmp/image-scan
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      - name: cert
+        secret:
+          secretName: {{ include "sysdig-image-scanner.name" . }}-tls
+      - name: rules
+        configMap:
+          name: {{ include "sysdig-image-scanner.name" . }}-rules
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+
