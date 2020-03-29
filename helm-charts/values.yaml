@@ -17,6 +17,65 @@ serviceAccount:
 sysdigSecureApiUrl: https://api.sysdigcloud.com
 sysdigSecureToken: <Sysdig-Secure-Secret-Token>
 
+scanRules:
+
+  # If set to "true", a default set of rules will be generated from this YAML values.
+  # Otherwise, no rules will be generated, and only "customRules" below will apply
+  autoGenerate: true
+
+  # Default admission policy to apply: [accept | reject | scan-result]
+  defaultPolicy: scan-result
+
+  # What should we do if the Scan Result is not yet available (scan in progress): [accept | reject]
+  reportPending: reject
+
+  # What should we do if the Scan has failed (wrong credentials, misconfiguration, etc.): [accept | reject]
+  scanFailed: reject
+
+  alwaysAccept: []
+
+  # These 2 registries will always be rejected unless 
+  alwaysReject:
+    - "bad-registry.com/"
+    - "malware-registry.io/"
+  
+  alwaysScanResult: []
+
+  byNamespace: {}
+  #  ns-dev:
+  #    # By default, images will be accepted in this NS regardless of the scan result
+  #    defaultPolicy: accept
+  #  ns-prod:
+  #    # All images rejected by default in this namespace
+  #    defaultPolicy: reject
+  #    # Images from "my-trusted-registry.com/" will be always accepted
+  #    alwasyAccept:
+  #      - "my-trusted-registry.com/"
+  #  ns-playground:
+  #    defaultPolicy: accept
+  #    alwaysReject: []
+
+# Define a set of custom rego rules. If scanRules.autoGenerate is true, 
+# these customRules are appended to the set of generated rules. 
+# Otherwise, these customRules are the only rules definition,
+customRules: |
+      ###### Begin: Custom rules ######
+      my_example_rule {
+          # Some conditions... 
+          false
+      }
+
+      other_rule {
+          # Some other conditions...
+          true
+      }
+
+      deny_image["This is a custom deny message"] {
+          my_example_rule
+          other_rule
+      }
+      ###### End: Custom rules ######
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
