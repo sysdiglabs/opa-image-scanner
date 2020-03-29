@@ -59,7 +59,6 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 			ImageAndTag: container.Image,
 		}
 	} else if report, err = e.scanner.GetReport(container.Image, digest); err != nil {
-		// TODO: Evaluate the error with OPA
 		klog.Warningf("get scan report error: %v", err)
 		report = &imagescanner.ScanReport{
 			Status:      imagescanner.StatusReportNotAvailable,

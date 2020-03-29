@@ -6,22 +6,236 @@ metadata:
     {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
 data:
   rules.rego: |
+{{if .Values.scanRules.autoGenerate }}
         package imageadmission
 
-        allow_image {
-                input.ScanReport.Status == "accepted"
+        policies := {{ toJson .Values.scanRules }}
+       
+        # Helper variables
+        
+        ns := input.AdmissionRequest.object.metadata.namespace
+
+        # Helper rules
+
+        invalid_default_policy[value] {
+                not policies.defaultPolicy == "accept"
+                not policies.defaultPolicy == "reject"
+                not policies.defaultPolicy == "scan-result"
+                value := policies.defaultPolicy
         }
 
-        allow_image {
+        invalid_default_policy["<empty>"] {
+                not policies.defaultPolicy
+        }
+
+        invalid_report_pending_policy[value] {
+                not policies.reportPending == "accept"
+                not policies.reportPending == "reject"
+                value := policies.reportPending
+        }
+        
+       invalid_report_pending_policy["<empty>"] {
+                not policies.reportPending
+        }        
+
+        invalid_scan_failed_policy[value] {
+                not policies.scanFailed == "accept"
+                not policies.scanFailed == "reject"
+                value := policies.scanFailed
+        }
+        
+        invalid_scan_failed_policy["<empty>"] {
+                not policies.scanFailed
+        }        
+
+        invalid_ns_default_policy[[ns,value]] {
+                policies.byNamespace[ns].defaultPolicy
+                not policies.byNamespace[ns].defaultPolicy == "accept"
+                not policies.byNamespace[ns].defaultPolicy == "reject"
+                not policies.byNamespace[ns].defaultPolicy == "scan-result"
+                value := policies.byNamespace[ns].defaultPolicy
+        }
+
+        invalid_ns_report_pending_policy[[ns,value]] {
+                policies.byNamespace[ns].reportPending
+                not policies.byNamespace[ns].reportPending == "accept"
+                not policies.byNamespace[ns].reportPending == "reject"
+                value := policies.byNamespace[ns].reportPending
+        }        
+
+        invalid_ns_scan_failed_policy[[ns,value]] {
+                policies.byNamespace[ns].scanFailed
+                not policies.byNamespace[ns].scanFailed == "accept"
+                not policies.byNamespace[ns].scanFailed == "reject"
+                value := policies.byNamespace[ns].scanFailed
+        }
+
+        # Configuration errors
+
+        config_error[msg] {
+                invalid_default_policy[value]
+                msg = sprintf("Invalid scanRules.defaultPolicy - '%s'", [value])
+        }
+
+        config_error[msg] {
+                some value
+                invalid_report_pending_policy[value]
+                msg :=  sprintf("Invalid scanRules.reportPending - '%s'", [value])
+        }
+
+        config_error[msg] {
+                some value
+                invalid_scan_failed_policy[value]
+                msg := sprintf("Invalid scanRules.scanFailed - '%s'", [value])
+        }
+        
+        config_error[msg] {
+                some ns, value
+                invalid_ns_default_policy[[ns,value]]
+                msg := sprintf("Invalid scanRules.defaultPolicy for namespace '%s' - '%s'", [ns, value])
+        }
+
+        config_error[msg] {
+                some ns, value
+                invalid_ns_report_pending_policy[[ns,value]]
+                msg := sprintf("Invalid scanRules.reportPending for namespace '%s' - '%s'", [ns, value])
+        }
+        
+        config_error[msg] {
+                some ns, value
+                invalid_ns_scan_failed_policy[[ns,value]]
+                msg := sprintf("Invalid scanRules.scanFailed for namespace '%s' - '%s'", [ns, value])
+        }
+        
+        # Scan result helpers
+        
+        scan_result_rejected {
+                input.ScanReport.Status == "rejected"
+        }
+        
+        scan_result_failed {
+                input.ScanReport.Status == "scan_failed"        
+        }
+        
+        scan_result_not_available {
+                input.ScanReport.Status == "report_not_available"
+        }
+        
+        scan_result_unexpected {
+                not input.ScanReport.Status == "accepted"
+                not input.ScanReport.Status == "rejected"
+                not input.ScanReport.Status == "scan_failed"
+                not input.ScanReport.Status == "report_not_available"
+        }
+
+        # Default policies
+
+        default_deny_image["Image rejected by default policy"] {
+                not policies.byNamespace[ns].defaultPolicy
+                not default_always_scan_result
+                not default_always_accept
+                policies.defaultPolicy == "reject"
+        }
+
+        default_deny_image["Image rejected - scan report is pending"] {
+                not policies.byNamespace[ns].reportPending
+                not default_always_accept
+                policies.reportPending == "reject"
+                scan_result_not_available
+        }
+
+        default_deny_image["Image rejected - scan failed"] {
+                not policies.byNamespace[ns].scanFailed
+                not default_always_accept
+                policies.scanFailed == "reject"
+                scan_result_failed
+        }
+        
+        default_check_scan_result {
+                not default_always_accept        
+                policies.defaultPolicy == "scan-result"
+        }                
+        
+        default_deny_image["Image rejected by scan-result"] {
+                not policies.byNamespace[ns].defaultPolicy
+                default_check_scan_result
+                scan_result_rejected
+        }
+        
+         default_deny_image[msg] {
+                not policies.byNamespace[ns].defaultPolicy
+                default_check_scan_result
+                scan_result_unexpected
+                msg := sprintf("Image rejected - Unexpected ScanReport Status value - '%s'", [input.ScanReport.Status])
+        }
+
+        # Default per-registry settings
+        
+        default_always_accept {
+                not policies.byNamespace[ns].alwaysAccept
+                some i
+                prefix := policies.alwaysAccept[i]
+                startswith(input.ScanReport.ImageAndTag, prefix)
+        }
+        
+        default_always_scan_result {
+                not policies.byNamespace[ns].alwaysScanResult
+                some i
+                prefix := policies.alwaysScanResult[i]
+                startswith(input.ScanReport.ImageAndTag, prefix)        
+        }
+        
+        default_check_scan_result {
+                default_always_scan_result
+        }
+        
+        default_always_reject[msg] {
+                not policies.byNamespace[ns].alwaysReject
+                some i
+                prefix := policies.alwaysReject[i]
+                startswith(input.ScanReport.ImageAndTag, prefix)
+                msg := sprintf("Image rejected - prefix %s is blacklisted", [prefix])
+        }        
+        
+        default_deny_image[msg] {
+                default_always_reject[msg]
+        }
+        
+        # Per namespace policies
+        
+        ns_deny_image[[ns, "Image rejected by namespace policy"]] {
+                policies.byNamespace[ns].defaultPolicy == "reject"
+        }
+
+        ns_deny_image[[ns, "Image rejected by scan-result"]] {
+                policies.byNamespace[ns].defaultPolicy == "scan-result"
+                input.ScanReport.Status == "rejected"
+        }
+
+        ns_deny_image[[ns, "Image rejected - scan report is pending"]] {
+                policies.byNamespace[ns].reportPending == "reject"
                 input.ScanReport.Status == "report_not_available"
         }
 
+        ns_deny_image[[ns, "Image rejected - scan failed"]] {
+                policies.byNamespace[ns].scanFailed == "reject"
+                input.ScanReport.Status == "scan_failed"
+        }
+
+        # Final decission making
+        
         deny_image[msg] {
-                input.ScanReport.Status == "report_not_available"
-                msg := "Image scan in progress, please try again"
+                config_error[msg]
         }
 
         deny_image[msg] {
-                not allow_image
-                msg := sprintf("Denying images by default. Status: %s", [input.ScanReport.Status])
+                default_deny_image[msg]
         }
+
+        deny_image[msg] {
+                some ns_msg
+                ns_deny_image[[ns, ns_msg]]
+                msg := sprintf("Namespace '%s' policy - %s", [ns, ns_msg])
+        }
+{{ end }}
+{{ .Values.customRules }}
