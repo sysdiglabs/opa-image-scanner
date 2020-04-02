@@ -37,3 +37,21 @@ jobs:
       - run: docker build -t $IMAGE_NAME -f build/Dockerfile .
       - run: docker login -u airadier -p $docker_token
       - run: docker push $IMAGE_NAME
+  rego-tests:
+    docker:
+      - image: docker:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: echo "package imageadmission" > rego-test/imageadmission.rego
+      - run: echo "policies := data.policies" >> rego-test/imageadmission.rego
+      - run: echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
+      - run: cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
+      - run: docker run --rm -v $(PWD)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+      - rego-tests

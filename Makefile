@@ -2,13 +2,22 @@ IMAGE=sysdiglabs/opa-image-scanner:local
 
 .PHONY: build test
 
-all: build test
+all: build test test-go test-rego
 
 build:
 	go build ./...
 
-test:
+test: test-go test-rego
+
+test-go:
 	go test ./...
+
+test-rego:
+	echo "package imageadmission" > rego-test/imageadmission.rego
+	echo "policies := data.policies" >> rego-test/imageadmission.rego
+	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
+	cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
+	docker run --rm -v $(PWD)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 cert: cert.crt secret-tls.yaml
 

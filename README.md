@@ -44,6 +44,12 @@ After a few seconds, this chart will deploy all the required components, which i
  * Create the webhook deployment and service
  * Create a configmap with a predefined set of rules to cover most common use cases
 
+### Mutating admission controller
+
+You might wonder, why mutate the pod spec to use the image digest instead? Using the tag in the scan and then in the pod scheduling you are exposed to a TOCTOU (Time-of-check Time-of-use) issue. Basically the image that is scanned can differ from the image that is pulled for the container when the pod is scheduled, in different version of the image is pushed to the registry under the same tag.
+
+The admission controller mutates the pod to use the image digest instead, preventing this issue by making sure that the same image that is scanned is deployed in the cluster whatever scheduling events occur in the future. The image and tag names are kept as annotations in the pod, in case you want to know the retrieve the original image tag.
+
 ### Customize the settings
 
 The default settings in *values.yaml* should be right for most cases, but you need to provide at least:
