@@ -21,17 +21,29 @@ func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e opaimagescanner.Admissi
 		return toAdmissionResponse(admissionSpec.UID, err), nil, nil
 	} else {
 
-		klog.Info("[admission-server] evaluating admission of pod: " + admissionSpec.Name)
+		podName := admissionSpec.Name
+		if podName == "" {
+			podName = "<Not yet generated>"
+		}
+		klog.Infof("[admission-server] Admission review %s - evaluating admission of pod '%s'", admissionSpec.UID, podName)
 
 		allowed, digestMappings, pod, denyReasons := e.Evaluate(admissionSpec)
 
+		if pod.Name != "" {
+			podName = pod.Name
+		} else if pod.GetObjectMeta().GetGenerateName() != "" {
+			podName = pod.GetObjectMeta().GetGenerateName() + "*"
+		}
+
+		klog.Infof("[admission-server] Admission review %s - finished evaluating admission of pod '%s'", admissionSpec.UID, podName)
+
 		if allowed {
-			klog.Infof("[admission-server] pod accepted: %s", admissionSpec.Name)
+			klog.Infof("[admission-server] Admission review %s - pod '%s' accepted", admissionSpec.UID, podName)
 			return &v1beta1.AdmissionResponse{UID: admissionSpec.UID, Allowed: true}, digestMappings, pod
 		} else {
 			reasons := strings.Join(denyReasons, "\n")
 
-			klog.Infof("[admission-server] pod rejected: %s. Reasons:\n%s", admissionSpec.Name, reasons)
+			klog.Infof("[admission-server] Admission review %s - pod '%s' rejected. Reasons:\n%s", admissionSpec.UID, podName, reasons)
 
 			//TODO: More info? Annotations?
 			reviewResponse := v1beta1.AdmissionResponse{}

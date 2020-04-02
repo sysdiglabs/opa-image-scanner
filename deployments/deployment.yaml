@@ -39,7 +39,7 @@ spec:
     spec:
       serviceAccount: sysdig-image-scan
       containers:
-      - image: airadier/image-scan-webhook
+      - image: sysdiglabs/opa-image-scanner
         name: image-scan-webhook
         args:
           - --secure-port=8443

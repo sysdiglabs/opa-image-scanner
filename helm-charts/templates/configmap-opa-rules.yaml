@@ -11,7 +11,7 @@ data:
        
         # Helper variables
         
-        namespace := input.AdmissionRequest.object.metadata.namespace
+        namespace := input.AdmissionRequest.namespace
 
 {{ if .Values.scanRules.autoGenerate }}
 
@@ -88,6 +88,15 @@ data:
         }
 
         # Configuration errors
+
+        config_error["AdmissionRequest is missing in input"] {
+                not input.AdmissionRequest
+        }
+        
+        
+        config_error["ScanReport is missing in input"] {
+                not input.ScanReport
+        }
 
         config_error[msg] {
                 invalid_default_policy[value]

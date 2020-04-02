@@ -30,6 +30,9 @@ spec:
             - /cert/tls.crt
             - --tls-private-key-file
             - /cert/tls.key
+{{- if .Values.verboseLog }}
+            - "-v3"
+{{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}

@@ -32,15 +32,14 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 	//TODO: Run in parallel and combine multiple containers output
 	for _, container := range pod.Spec.Containers {
 
-		klog.V(3).Infof("Checking container '%s' image '%s'", container.Name, container.Image)
+		klog.Infof("Checking container '%s' image '%s'", container.Name, container.Image)
 
 		containerAccepted, digest, containerErrors := e.evaluateContainer(a, pod, &container, regoRules)
+		digestMappings[container.Image] = digest
 		if !containerAccepted {
 			accepted = false
 			errors = append(errors, containerErrors...)
 		}
-
-		digestMappings[container.Image] = digest
 	}
 
 	return
@@ -74,7 +73,7 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 	}
 
 	if err := e.opaEvaluator.Evaluate(regoQuery, regoRules, opaInput); err != nil {
-		return false, "", []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
+		return false, digest, []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
 	}
 
 	return true, digest, nil

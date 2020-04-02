@@ -1,4 +1,4 @@
-IMAGE=airadier/image-scan-webhook
+IMAGE=sysdiglabs/opa-image-scanner
 
 .PHONY: build test
 
