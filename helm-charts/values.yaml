@@ -62,7 +62,6 @@ scanRules:
 # these customRules are appended to the set of generated rules. 
 # Otherwise, these customRules are the only rules definition,
 customRules: |
-      ###### Begin: Custom rules ######
       my_example_rule {
           # Some conditions... 
           false
@@ -77,7 +76,6 @@ customRules: |
           my_example_rule
           other_rule
       }
-      ###### End: Custom rules ######
 
 imagePullSecrets: []
 nameOverride: ""

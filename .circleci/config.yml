@@ -36,4 +36,4 @@ jobs:
       - setup_remote_docker
       - run: docker build -t $IMAGE_NAME -f build/Dockerfile .
       - run: docker login -u airadier -p $docker_token
-      - run: docker push $IMAGE_NAMe
+      - run: docker push $IMAGE_NAME
