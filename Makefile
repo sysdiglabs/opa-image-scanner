@@ -1,4 +1,4 @@
-IMAGE=sysdiglabs/opa-image-scanner
+IMAGE=sysdiglabs/opa-image-scanner:local
 
 .PHONY: build test
 
