@@ -47,7 +47,7 @@ jobs:
       - run: echo "policies := data.policies" >> rego-test/imageadmission.rego
       - run: echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
       - run: cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
-      - run: docker run --rm -v $(PWD)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
+      - run: docker run --rm -v $(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 workflows:
   version: 2

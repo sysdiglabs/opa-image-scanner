@@ -17,7 +17,7 @@ test-rego:
 	echo "policies := data.policies" >> rego-test/imageadmission.rego
 	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
 	cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
-	docker run --rm -v $(PWD)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
+	docker run --rm -v $$(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 cert: cert.crt secret-tls.yaml
 
