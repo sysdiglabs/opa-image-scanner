@@ -7,72 +7,84 @@ metadata:
 data:
   rules.rego: |
         package imageadmission
-{{ if .Values.scanRules.autoGenerate }}
         policies := {{ toPrettyJson .Values.scanRules | nindent 8 }}
        
         # Helper variables
         
         namespace := input.AdmissionRequest.object.metadata.namespace
 
-        # Helper rules       
+{{ if .Values.scanRules.autoGenerate }}
+
+        # Helper functions
+
+        default_get(attr) = value {
+                value := policies[attr]
+        }
         
-        defined_in_namespace[attr] {      
-                policies.byNamespace
-                policies.byNamespace[ns]
-                policies.byNamespace[ns][attr]
+        ns_get(ns, attr) = value {
+                value := default_get("byNamespace")[ns][attr]
+        }        
+         
+        # Helper rules
+        
+        defined_in_namespace[[ns, attr]] { 
+                default_get("byNamespace")
+                default_get("byNamespace")[ns]
+                default_get("byNamespace")[ns][attr]
         }
 
         invalid_default_policy[value] {
-                not policies.defaultPolicy == "accept"
-                not policies.defaultPolicy == "reject"
-                not policies.defaultPolicy == "scan-result"
-                value := policies.defaultPolicy
+                not default_get("defaultPolicy") == "accept"
+                not default_get("defaultPolicy") == "reject"
+                not default_get("defaultPolicy") == "scan-result"
+                value := default_get("defaultPolicy")
         }
 
         invalid_default_policy["<empty>"] {
-                not policies.defaultPolicy
+                not default_get("defaultPolicy")
         }
 
         invalid_report_pending_policy[value] {
-                not policies.reportPending == "accept"
-                not policies.reportPending == "reject"
-                value := policies.reportPending
+                not default_get("reportPending") == "accept"
+                not default_get("reportPending") == "reject"
+                value := default_get("reportPending")
         }
 
         invalid_report_pending_policy["<empty>"] {
-                not policies.reportPending
+                not default_get("reportPending")
         }
 
         invalid_scan_failed_policy[value] {
-                not policies.scanFailed == "accept"
-                not policies.scanFailed == "reject"
-                value := policies.scanFailed
+                not default_get("scanFailed") == "accept"
+                not default_get("scanFailed") == "reject"
+                value := default_get("scanFailed")
         }
         
         invalid_scan_failed_policy["<empty>"] {
-                not policies.scanFailed
+                not default_get("scanFailed")
         }        
 
         invalid_ns_default_policy[[ns,value]] {
-                defined_in_namespace["defaultPolicy"]
-                not policies.byNamespace[ns].defaultPolicy == "accept"
-                not policies.byNamespace[ns].defaultPolicy == "reject"
-                not policies.byNamespace[ns].defaultPolicy == "scan-result"
-                value := policies.byNamespace[ns].defaultPolicy
+                defined_in_namespace[[ns, "defaultPolicy"]]
+                not ns_get(ns, "defaultPolicy") == "accept"
+                not ns_get(ns, "defaultPolicy") == "reject"
+                not ns_get(ns, "defaultPolicy") == "scan-result"
+                value := ns_get(ns, "defaultPolicy")
         }
 
+        
         invalid_ns_report_pending_policy[[ns,value]] {
-                defined_in_namespace["reportPending"]
-                not policies.byNamespace[ns].reportPending == "accept"
-                not policies.byNamespace[ns].reportPending == "reject"
-                value := policies.byNamespace[ns].reportPending
+                defined_in_namespace[[ns, "reportPending"]]
+                not ns_get(ns, "reportPending") == "accept"
+                not ns_get(ns, "reportPending") == "reject"
+                value := ns_get(ns, "reportPending")
         }        
 
         invalid_ns_scan_failed_policy[[ns,value]] {       
-                defined_in_namespace["scanFailed"]
-                not policies.byNamespace[ns].scanFailed == "accept"
-                not policies.byNamespace[ns].scanFailed == "reject"
-                value := policies.byNamespace[ns].scanFailed
+                defined_in_namespace[[ns, "scanFailed"]]
+                not ns_get(ns, "scanFailed") == "accept"
+                not ns_get(ns, "scanFailed") == "reject"
+                value := ns_get(ns, "scanFailed")
         }
 
         # Configuration errors
@@ -136,39 +148,39 @@ data:
         # Default policies
 
         default_deny_image["Image rejected by default policy"] {
-                not defined_in_namespace["defaultPolicy"]
+                not defined_in_namespace[[namespace, "defaultPolicy"]]
                 not default_always_scan_result
                 not default_always_accept
-                policies.defaultPolicy == "reject"
+                default_get("defaultPolicy") == "reject"
         }
 
         default_deny_image["Image rejected - scan report is pending"] {
-                not defined_in_namespace["reportPending"]
+                not defined_in_namespace[[namespace, "reportPending"]]
                 not default_always_accept
-                policies.reportPending == "reject"
+                default_get("reportPending") == "reject"
                 scan_result_not_available
         }
 
         default_deny_image["Image rejected - scan failed"] {
-                not defined_in_namespace["scanFailed"]
+                not defined_in_namespace[[namespace, "scanFailed"]]
                 not default_always_accept
-                policies.scanFailed == "reject"
+                default_get("scanFailed") == "reject"
                 scan_result_failed
         }
         
         default_check_scan_result {
                 not default_always_accept        
-                policies.defaultPolicy == "scan-result"
+                default_get("defaultPolicy") == "scan-result"
         }                
         
         default_deny_image["Image rejected by scan-result"] {
-                not defined_in_namespace["defaultPolicy"]
+                not defined_in_namespace[[namespace, "defaultPolicy"]]
                 default_check_scan_result
                 scan_result_rejected
         }
         
          default_deny_image[msg] {
-                not defined_in_namespace["defaultPolicy"]
+                not defined_in_namespace[[namespace, "defaultPolicy"]]
                 default_check_scan_result
                 scan_result_unexpected
                 msg := sprintf("Image rejected - Unexpected ScanReport Status value - '%s'", [input.ScanReport.Status])
@@ -177,16 +189,16 @@ data:
         # Default per-registry settings
         
         default_always_accept {
-                not defined_in_namespace["alwaysAccept"]
+                not defined_in_namespace[[namespace, "alwaysAccept"]]
                 some i
-                prefix := policies.alwaysAccept[i]
+                prefix := default_get("alwaysAccept")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)
         }
         
         default_always_scan_result {
-                not defined_in_namespace["alwaysScanResult"]
+                not defined_in_namespace[[namespace, "alwaysScanResult"]]
                 some i
-                prefix := policies.alwaysScanResult[i]
+                prefix := default_get("alwaysScanResult")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)
         }
         
@@ -195,9 +207,9 @@ data:
         }
         
         default_always_reject[msg] {
-                not defined_in_namespace["alwaysReject"]
+                not defined_in_namespace[[namespace, "alwaysReject"]]
                 some i
-                prefix := policies.alwaysReject[i]
+                prefix := default_get("alwaysReject")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)
                 msg := sprintf("Image rejected - prefix '%s' is blacklisted", [prefix])
         }        
@@ -209,26 +221,26 @@ data:
         # Per-namespace policies
         
         ns_deny_image[[ns, "Image rejected by namespace policy"]] {
-                defined_in_namespace["defaultPolicy"]
-                policies.byNamespace[ns].defaultPolicy == "reject"
+                defined_in_namespace[[ns, "defaultPolicy"]]
+                ns_get(ns, "defaultPolicy") == "reject"
         }
 
         ns_deny_image[[ns, "Image rejected in namespace - scan report is pending"]] {
-                defined_in_namespace["reportPending"]
-                policies.byNamespace[ns].reportPending == "reject"
+                defined_in_namespace[[ns, "reportPending"]]
+                ns_get(ns, "reportPending") == "reject"
                 input.ScanReport.Status == "report_not_available"
         }
 
         ns_deny_image[[ns, "Image rejected in namespace - scan failed"]] {
-                defined_in_namespace["scanFailed"]
-                policies.byNamespace[ns].scanFailed == "reject"
+                defined_in_namespace[[ns, "scanFailed"]]
+                ns_get(ns, "scanFailed") == "reject"
                 input.ScanReport.Status == "scan_failed"
         }
         
         ns_check_scan_result[ns] {
                 not ns_always_accept[ns]    
-                defined_in_namespace["defaultPolicy"]                
-                policies.byNamespace[ns].defaultPolicy == "scan-result"
+                defined_in_namespace[[ns, "defaultPolicy"]]
+                ns_get(ns, "defaultPolicy") == "scan-result"
         }              
         
         ns_deny_image[[ns, "Image rejected in namespace by scan-result"]] {
@@ -239,16 +251,16 @@ data:
         # Per-namespace and registry black/white list settings
 
         ns_always_accept[ns] {
-                defined_in_namespace["alwaysAccept"]                
+                defined_in_namespace[[ns, "alwaysAccept"]]
                 some i
-                prefix := policies.byNamespace[ns].alwaysAccept[i]
+                prefix := ns_get(ns, "alwaysAccept")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)
         }
         
         ns_always_scan_result[ns] {
-                defined_in_namespace["alwaysScanResult"]                
+                defined_in_namespace[[ns, "alwaysScanResult"]]
                 some i
-                prefix := policies.byNamespace[ns].alwaysScanResult[i]
+                prefix := ns_get(ns, "alwaysScanResult")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)        
         }
         
@@ -257,9 +269,9 @@ data:
         }
         
         ns_always_reject[[ns,msg]] {
-                defined_in_namespace["alwaysReject"]                
+                defined_in_namespace[[ns, "alwaysReject"]]
                 some i
-                prefix := policies.byNamespace[ns].alwaysReject[i]
+                prefix := ns_get(ns, "alwaysReject")[i]
                 startswith(input.ScanReport.ImageAndTag, prefix)
                 msg := sprintf("Image rejected - prefix '%s' is blacklisted", [prefix])
         }  
