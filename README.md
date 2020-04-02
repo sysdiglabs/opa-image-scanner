@@ -1,4 +1,4 @@
-# Validation admission Webhook
+# OPA Image Scanner admission controller
 ![CircleCI](https://circleci.com/gh/sysdiglabs/opa-image-scanner.svg?style=svg) ![last commit](https://flat.badgen.net/github/last-commit/airadier/image-scan-webhook?icon=github) ![license](https://flat.badgen.net/github/license/airadier/cloud-native-security-hub)
 
 ## Overview
