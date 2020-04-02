@@ -2,6 +2,7 @@ version: 2
 jobs:
   build:
     environment:
+      IMAGE_NAME: sysdiglabs/opa-image-scanner:cibuild
       TEST_RESULTS: /tmp/test-results
     docker:
       - image: circleci/golang:1.13
@@ -33,4 +34,6 @@ jobs:
             - "/go/pkg"
   
       - setup_remote_docker
-      - run: docker build -t test-build -f build/Dockerfile .
+      - run: docker build -t $IMAGE_NAME -f build/Dockerfile .
+      - run: docker login -u airadier -p $docker_token
+      - run: docker push $IMAGE_NAMe
