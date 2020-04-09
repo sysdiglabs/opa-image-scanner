@@ -20,7 +20,7 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "sysdig-image-scanner.serviceAccountName" . }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        fsGroup: 65532
       containers:
         - name: {{ .Chart.Name }}-webhook
           image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
@@ -34,7 +34,12 @@ spec:
             - "-v3"
 {{- end }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           envFrom:
             - configMapRef:
