@@ -15,7 +15,8 @@ serviceAccount:
   name:
 
 sysdigSecureApiUrl: https://api.sysdigcloud.com
-sysdigSecureToken: <Sysdig-Secure-Secret-Token>
+# Put your <Sysdig-Secure-Secret-Token> in this value
+sysdigSecureToken: ""
 
 #Set to true to increase verbosity and output OPA input and rules in the log
 verboseLog: false

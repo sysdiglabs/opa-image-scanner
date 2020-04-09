@@ -22,13 +22,16 @@ Using OPA and rego language to define the admission policy rules and evaluate th
 
 ## Installation
 
-The easiest way to deploy this admission controller on your cluster is using the helm charts available in this repository.
+The easiest way to deploy this admission controller on your cluster is using the helm charts available in this repository, folder `helm-charts`.
 
 The admission controller is registered as a Kubernetes aggregated API server with mutual TLS authentication, and then it registers a Dynamic Admission Control webhook to intercept the creation or update of pod resources.
 
-Just customize the settings in the values.yaml file, create the namespace and deploy using Helm 3:
+Just customize the settings in the values.yaml file, create the namespace and deploy using Helm 3.
+
+The **sysdigSecureToken** value is mandatory.
 
 ```
+$ cd helm-charts
 $ kubectl create ns sysdig-image-scanner
  
 $ helm install -n sysdig-image-scanner sysdig-image-scanner . 
