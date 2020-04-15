@@ -3,3 +3,4 @@ cert.crt
 cert.key
 deployments/secret.yaml
 .vscode/settings.json
+rego-test/imageadmission.rego

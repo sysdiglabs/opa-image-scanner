@@ -41,8 +41,8 @@ func TestDummyDeny(t *testing.T) {
 	`
 
 	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
-	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules:\n- Image denied") {
-		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason:\n%v", err)
+	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons:\n- Image denied") {
+		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason:\n%v", err)
 	}
 }
 
@@ -62,8 +62,8 @@ func TestEvaluateData(t *testing.T) {
 
 	err := NewEvaluator().Evaluate(regoQuery, rules, data, "")
 
-	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules:\n- Deny msg from data") {
-		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason: %v", err)
+	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons:\n- Deny msg from data") {
+		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason: %v", err)
 	}
 
 }
@@ -111,8 +111,8 @@ func TestEvaluateScanResultFailed(t *testing.T) {
 	`
 
 	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules") {
-		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason: %v", err)
+	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons") {
+		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason: %v", err)
 	}
 }
 

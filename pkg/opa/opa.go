@@ -102,7 +102,7 @@ func evaluateResults(rs rego.ResultSet) error {
 				msgBuilder.WriteString(fmt.Sprintf("- %s\n", value))
 			}
 			msgList := msgBuilder.String()
-			return fmt.Errorf("Image denied by OPA rules:\n%s", msgList)
+			return fmt.Errorf("Image admission denied. Reasons:\n%s", msgList)
 		}
 	}
 
