@@ -3,9 +3,9 @@
 
 ## Overview
 
-Sysdig’s OPA Image Scanner combines Sysdig Secure image image scanner with  OPA policy-based rego language to evaluate the scan results and the admission context, providing great flexibility on the admission decision.
+Sysdig’s OPA Image Scanner combines Sysdig Secure image scanner with OPA policy-based rego language to evaluate the scan results and the admission context, providing great flexibility on the admission decision.
 
-If you are already using an image scanner, you might be already aware of some limitations. As you need to explicitly configure the set of scanned images, you might miss some images that end up running in your cluster, or scanning images that are never run at all. Additionally, the image scanner has limited information about the image it is scanning: only registry, image name and tag. With such a narrow context, it is not possible to make more advanced decisions. Do you need a “dev” namespace with more permissive rules, and a very restrictive production one that only allows images from a trusted registry and no vulnerabilities?
+If you are already using an image scanner, you might be already aware of some limitations. As you need to explicitly configure the set of scanned images, you might miss some images that end up running in your cluster, or end up scanning images that are never run. Additionally, the image scanner has limited information about the image it is scanning: only registry, image name and tag. With such a narrow context, it is not possible to make more advanced decisions. Do you need a “dev” namespace with more permissive rules, and a very restrictive production one that only allows images from a trusted registry and no vulnerabilities?
 
 Our end goal in a cluster environment is to know if we can deploy an image based on the result of the scan and some additional information. Some common image scanning use cases include:
  * Allow the image if scanner policy evaluation accepted the image
@@ -33,7 +33,6 @@ The **sysdigSecureToken** value is mandatory.
 ```
 $ cd helm-charts
 $ kubectl create ns sysdig-image-scanner
- 
 $ helm install -n sysdig-image-scanner sysdig-image-scanner . 
 ```
 
@@ -45,7 +44,8 @@ After a few seconds, this chart will deploy all the required components, which i
  * Create a service account for the webhook service pod(s).
  * Roles and permissions to allow the SA authenticate the API server, as well as permissions to delegate auth decisions to the Kubernetes core API server.
  * Create the webhook deployment and service
- * Create a configmap with a predefined set of rules to cover most common use cases
+ * Create a ConfigMap with a predefined set of rules to cover most common use cases (if scanPolicies.autoGenerate is set to *true*)
+ * Create a ConfigMap with a JSON dump of the **scanPolicies** settings in values.yaml. The value of this scanPolicies change the evaluation of the OPA rules.
 
 ### Mutating admission controller
 
@@ -60,11 +60,11 @@ The default settings in *values.yaml* should be right for most cases, but you ne
 * **sysdigSecureToken** - The Sysdig Secure Token for your account
 * **sysdigSecureApiUrl** - if the default SaS URL does not fit your environment (in case you are using the onPrem version of Sysdig Secure
   
-If you set the value **verboseLog** to *true*, the OPA engine will include additional information in the output logs, like the input data (AdmissionReview and ScanReport) and the rules being evaluated. This can help debugging issues with the rule by copying the information and testing in the [Rego Playground](https://play.openpolicyagent.org/).
+If you set the value **verboseLog** to *true*, the OPA engine will include additional information in the output logs, like the input (AdmissionReview and ScanReport), the data, and the rules being evaluated. This can help debugging issues with the rule by copying the information and testing in the [Rego Playground](https://play.openpolicyagent.org/).
 
 ### Evaluation rules
 
-In the *values.yaml* you will find a **scanPolicies** section where you can set default actions for evaluating the images and scan reports and a **customRules** section:
+In the *values.yaml* you will find a **scanPolicies** section where you can set default policies for evaluating the images and scan reports and a **customRules** section:
 
 ```yaml
 scanPolicies:
@@ -104,8 +104,6 @@ scanPolicies:
   #    defaultPolicy: accept
   #    alwaysReject: []
 
-
-
 # Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
 # these customRules are appended to the set of generated rules. 
 # Otherwise, these customRules are the only rules definition,
@@ -130,20 +128,17 @@ customRules: |
 
 ### Defining custom OPA rules
 
-Deploying via Helm charts will create a configmap with a default set of rules that behave according to the *scanPolicies* defined in the chart values.yaml (which are put into another configmap). When the OPA rules are evaluated, the *scanPolicies* defined in the values.yaml are passed as data.policies.
+Deploying via Helm charts will create a Configmap with a default set of rules that behave according to the *scanPolicies* defined in the chart values.yaml (which are put into another ConfigMap). When the OPA rules are evaluated, the *scanPolicies* defined in the values.yaml are passed as data.policies, and the rules are evaluated according to this policies, and according to the input (AdmissionReview and ScanReport).
 
-You can disable the auto generated set of rules by setting *autoGenerate* false, and the Helm chart will only create the package directive and define the *namespace* variable.
+You can disable the auto generated set of rules by setting *autoGenerate* false, and the Helm chart will only create the package directive, define the *namespace* variable, and assign the *policies* variable with the value of the defined policies, so you can write your own rules in the *customRules* key of the values.yaml.
 
+In case you want to edit the ConfigMap manually or define your own rules, the following requirements apply:
 
-So you can write your own rules in the *customRules* key of the values.yaml.
-
-In case you want to edit the configmap manually and define your own rules, the following requirements apply:
-
-* Rules must be deployed as a configmap names **image-scan-rules** inside a **rules.rego** key.
+* Rules must be deployed as a ConfigMap named **image-scan-rules** inside a **rules.rego** key.
 * Rules must be defined using *rego* expressions.
-* There must exist a package *imageadmission*.
-* Package imageadmission should define rejection rules like *deny_image[msg]*, where *msg* is the rejection message.
-* The admission controller will evaluate the expression **imageadmission.deny_image**, and in case it does not yield an empty list (so there are one or more possible values of *msg*), pod will be rejected.
+* They must be declared inside a package named *imageadmission*.
+* Package *imageadmission* should define rejection rules like *deny_image[msg]*, where *msg* is the rejection message.
+* The admission controller will evaluate the expression **imageadmission.deny_image**, and in case it does not yield an empty list (so there are one or more possible values of *msg*), pod will be rejected. Otherwise, if the evaluation of **imageadmission.deny_image** yields no results, the pod will be admited.
 
 An example configmap:
 
