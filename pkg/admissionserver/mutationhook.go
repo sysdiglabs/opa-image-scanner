@@ -34,17 +34,18 @@ func (m *mutationHook) Admit(admissionSpec *v1beta1.AdmissionRequest) *v1beta1.A
 	p := v1beta1.PatchType("JSONPatch")
 	response.PatchType = &p
 
-	response.Patch = []byte(buildJSONPatch(admissionSpec, pod, digestMapping))
+	response.Patch = []byte(buildJSONPatch(pod, digestMapping))
 
 	return response
 }
 
-func buildJSONPatch(admissionSpec *v1beta1.AdmissionRequest, pod *corev1.Pod, digestMapping map[string]string) string {
+func buildJSONPatch(pod *corev1.Pod, digestMapping map[string]string) string {
 
 	if pod == nil {
 		return "[]"
 
 	}
+
 	var sb strings.Builder
 	for idx, container := range pod.Spec.Containers {
 
@@ -57,12 +58,16 @@ func buildJSONPatch(admissionSpec *v1beta1.AdmissionRequest, pod *corev1.Pod, di
 		}
 
 		if sb.Len() != 0 {
-			sb.WriteString(",")
+			sb.WriteString(", ")
+		} else if len(pod.GetObjectMeta().GetAnnotations()) == 0 {
+			// If pod object has no annotation, create the annotations path
+			sb.WriteString(`{"op": "add", "path": "/metadata/annotations", "value": {}}, `)
 		}
+
 		parts := strings.Split(container.Image, ":")
 		newImage := fmt.Sprintf("%s@%s", parts[0], digestMapping[container.Image])
-		sb.WriteString(fmt.Sprintf(`{ "op": "replace", "path": "/spec/containers/%d/image", "value": "%s" },`, idx, newImage))
-		sb.WriteString(fmt.Sprintf(`{ "op": "add", "path": "/metadata/annotations", "value": {"admission.sysdig.com/container-%d-original-image": "%s", "admission.sysdig.com/container-%d-mutated-image": "%s"  }}`, idx+1, container.Image, idx+1, newImage))
+		sb.WriteString(fmt.Sprintf(`{"op": "replace", "path": "/spec/containers/%d/image", "value": "%s"}, `, idx, newImage))
+		sb.WriteString(fmt.Sprintf(`{"op": "add", "path": "/metadata/annotations/admission.sysdig.com~1container-%d-original-image", "value": "%s"}, {"op": "add", "path": "/metadata/annotations/admission.sysdig.com~1container-%d-mutated-image", "value": "%s"}`, idx+1, container.Image, idx+1, newImage))
 
 		klog.Infof("[mutation-server] Patching container image: %s -> %s", container.Image, newImage)
 
