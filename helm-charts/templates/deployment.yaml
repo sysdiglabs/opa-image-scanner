@@ -23,7 +23,7 @@ spec:
         fsGroup: 65532
       containers:
         - name: {{ .Chart.Name }}-webhook
-          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ include "sysdig-image-scanner.tag" . }}"
           args:
             - --secure-port={{ .Values.service.port }}
             - --tls-cert-file
@@ -50,8 +50,8 @@ spec:
             - name: cert
               mountPath: /cert
               readOnly: true
-            - name: rules
-              mountPath: /tmp/image-scan
+            - name: config
+              mountPath: /config
               readOnly: true
           ports:
             - name: http
@@ -66,8 +66,8 @@ spec:
             - name: cert
               mountPath: /cert
               readOnly: true
-            - name: rules
-              mountPath: /tmp/image-scan
+            - name: config
+              mountPath: /config
               readOnly: true
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
@@ -75,9 +75,13 @@ spec:
       - name: cert
         secret:
           secretName: {{ include "sysdig-image-scanner.name" . }}-tls
-      - name: rules
-        configMap:
-          name: {{ include "sysdig-image-scanner.name" . }}-rules
+      - name: config
+        projected:
+          sources:
+            - configMap:
+                name: {{ include "sysdig-image-scanner.name" . }}-rules
+            - configMap:
+                name: {{ include "sysdig-image-scanner.name" . }}-policy
     {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

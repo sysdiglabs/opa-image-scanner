@@ -18,6 +18,10 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 	if err != nil {
 		regoRules = regoDefaultRules
 	}
+	data, err := e.getOPADataFunc()
+	if err != nil {
+		return false, nil, nil, []string{err.Error()}
+	}
 
 	if a == nil {
 		return false, nil, nil, []string{"Admission request is <nil>"}
@@ -34,7 +38,7 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 
 		klog.Infof("Checking container '%s' image '%s'", container.Name, container.Image)
 
-		containerAccepted, digest, containerErrors := e.evaluateContainer(a, pod, &container, regoRules)
+		containerAccepted, digest, containerErrors := e.evaluateContainer(a, pod, &container, regoRules, data)
 		digestMappings[container.Image] = digest
 		if !containerAccepted {
 			accepted = false
@@ -45,7 +49,8 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 	return
 
 }
-func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules string) (accepted bool, digest string, errors []string) {
+
+func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules, data string) (accepted bool, digest string, errors []string) {
 
 	var report *imagescanner.ScanReport
 
@@ -72,7 +77,7 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 		ContainerObject:  container,
 	}
 
-	if err := e.opaEvaluator.Evaluate(regoQuery, regoRules, opaInput); err != nil {
+	if err := e.opaEvaluator.Evaluate(regoQuery, regoRules, data, opaInput); err != nil {
 		return false, digest, []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
 	}
 

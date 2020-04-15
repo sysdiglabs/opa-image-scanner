@@ -64,6 +64,7 @@ type mockOPAEvaluator struct {
 
 	ExpectedQuery string
 	ExpectedRules string
+	ExpectedData  string
 
 	ReceivedInput interface{}
 
@@ -71,7 +72,7 @@ type mockOPAEvaluator struct {
 	Called      bool
 }
 
-func (e *mockOPAEvaluator) Evaluate(query string, rules string, input interface{}) error {
+func (e *mockOPAEvaluator) Evaluate(query string, rules, data string, input interface{}) error {
 	e.Called = true
 
 	if e.ExpectedQuery != "" && query != e.ExpectedQuery {
@@ -80,6 +81,10 @@ func (e *mockOPAEvaluator) Evaluate(query string, rules string, input interface{
 
 	if e.ExpectedRules != "" && rules != e.ExpectedRules {
 		e.T.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
+	}
+
+	if e.ExpectedData != "" && data != e.ExpectedData {
+		e.T.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
 	}
 
 	e.ReceivedInput = input
@@ -94,6 +99,13 @@ func mockGetOPARules() (string, error) {
 	return "package mock\nmock_rules{}", nil
 }
 
+func mockGetOPAData() (string, error) {
+	return `{"mockData": true}`, nil
+}
+
+var mockRules, _ = mockGetOPARules()
+var mockData, _ = mockGetOPAData()
+
 func TestDummy(t *testing.T) {
 
 	report := &imagescanner.ScanReport{
@@ -107,15 +119,14 @@ func TestDummy(t *testing.T) {
 		StartScanReturn:     StartScanReturn{Digest: "TestDigest", Error: nil},
 		GetReportReturn:     GetReportReturn{Report: report, Error: nil}}
 
-	mockRules, _ := mockGetOPARules()
-
 	opaEvaluator := &mockOPAEvaluator{
 		T:             t,
 		ExpectedQuery: "data.imageadmission.deny_image",
 		ExpectedRules: mockRules,
+		ExpectedData:  mockData,
 	}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -146,7 +157,7 @@ func TestNilAdmissionReview(t *testing.T) {
 	scanner := &mockImageScanner{}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	accepted, _, _, err := evaluator.Evaluate(nil)
 	if accepted || len(err) != 1 || err[0] != "Admission request is <nil>" {
@@ -164,7 +175,7 @@ func TestEmptyAdmissionReview(t *testing.T) {
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 	a := &v1beta1.AdmissionRequest{}
 
 	accepted, _, _, err := evaluator.Evaluate(a)
@@ -183,7 +194,7 @@ func TestStartScanFails(t *testing.T) {
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -218,7 +229,7 @@ func TestGetReportFails(t *testing.T) {
 		GetReportReturn:     GetReportReturn{Report: nil, Error: fmt.Errorf("Some error")}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -262,16 +273,15 @@ func TestEvaluationRejects(t *testing.T) {
 		StartScanReturn:     StartScanReturn{Digest: "TestDigest", Error: nil},
 		GetReportReturn:     GetReportReturn{Report: report, Error: nil}}
 
-	mockRules, _ := mockGetOPARules()
-
 	opaEvaluator := &mockOPAEvaluator{
 		T:             t,
 		ExpectedQuery: "data.imageadmission.deny_image",
 		ExpectedRules: mockRules,
+		ExpectedData:  mockData,
 		ReturnError:   fmt.Errorf("Reject this container"),
 	}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules)
+	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 

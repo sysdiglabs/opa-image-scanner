@@ -6,11 +6,11 @@ default_get(attr) = value {
 
 ns_get(ns, attr) = value {
         value := default_get("byNamespace")[ns][attr]
-}        
-    
+}
+
 # Helper rules
 
-defined_in_namespace[[ns, attr]] { 
+defined_in_namespace[[ns, attr]] {
         default_get("byNamespace")
         default_get("byNamespace")[ns]
         default_get("byNamespace")[ns][attr]
@@ -45,7 +45,7 @@ invalid_scan_failed_policy[value] {
 
 invalid_scan_failed_policy["<empty>"] {
         not default_get("scanFailed")
-}        
+}
 
 invalid_ns_default_policy[[ns,value]] {
         defined_in_namespace[[ns, "defaultPolicy"]]
@@ -61,9 +61,9 @@ invalid_ns_report_pending_policy[[ns,value]] {
         not ns_get(ns, "reportPending") == "accept"
         not ns_get(ns, "reportPending") == "reject"
         value := ns_get(ns, "reportPending")
-}        
+}
 
-invalid_ns_scan_failed_policy[[ns,value]] {       
+invalid_ns_scan_failed_policy[[ns,value]] {
         defined_in_namespace[[ns, "scanFailed"]]
         not ns_get(ns, "scanFailed") == "accept"
         not ns_get(ns, "scanFailed") == "reject"
@@ -83,37 +83,37 @@ config_error["ScanReport is missing in input"] {
 
 config_error[msg] {
         invalid_default_policy[value]
-        msg = sprintf("Invalid scanRules.defaultPolicy - '%s'", [value])
+        msg = sprintf("Invalid scanPolicies.defaultPolicy - '%s'", [value])
 }
 
 config_error[msg] {
         some value
         invalid_report_pending_policy[value]
-        msg :=  sprintf("Invalid scanRules.reportPending - '%s'", [value])
+        msg :=  sprintf("Invalid scanPolicies.reportPending - '%s'", [value])
 }
 
 config_error[msg] {
         some value
         invalid_scan_failed_policy[value]
-        msg := sprintf("Invalid scanRules.scanFailed - '%s'", [value])
+        msg := sprintf("Invalid scanPolicies.scanFailed - '%s'", [value])
 }
 
 config_error[msg] {
         some ns, value
         invalid_ns_default_policy[[ns,value]]
-        msg := sprintf("Invalid scanRules.defaultPolicy for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid scanPolicies.defaultPolicy for namespace '%s' - '%s'", [ns, value])
 }
 
 config_error[msg] {
         some ns, value
         invalid_ns_report_pending_policy[[ns,value]]
-        msg := sprintf("Invalid scanRules.reportPending for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid scanPolicies.reportPending for namespace '%s' - '%s'", [ns, value])
 }
 
 config_error[msg] {
         some ns, value
         invalid_ns_scan_failed_policy[[ns,value]]
-        msg := sprintf("Invalid scanRules.scanFailed for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid scanPolicies.scanFailed for namespace '%s' - '%s'", [ns, value])
 }
 
 # Scan result helpers
@@ -123,7 +123,7 @@ scan_result_rejected {
 }
 
 scan_result_failed {
-        input.ScanReport.Status == "scan_failed"        
+        input.ScanReport.Status == "scan_failed"
 }
 
 scan_result_not_available {
@@ -161,9 +161,9 @@ default_deny_image["Image rejected - scan failed"] {
 }
 
 default_check_scan_result {
-        not default_always_accept        
+        not default_always_accept
         default_get("defaultPolicy") == "scan-result"
-}                
+}
 
 default_deny_image["Image rejected by scan-result"] {
         not defined_in_namespace[[namespace, "defaultPolicy"]]
@@ -204,7 +204,7 @@ default_always_reject[msg] {
         prefix := default_get("alwaysReject")[i]
         startswith(input.ScanReport.ImageAndTag, prefix)
         msg := sprintf("Image rejected - prefix '%s' is blacklisted", [prefix])
-}        
+}
 
 default_deny_image[msg] {
         default_always_reject[msg]
@@ -230,10 +230,10 @@ ns_deny_image[[ns, "Image rejected in namespace - scan failed"]] {
 }
 
 ns_check_scan_result[ns] {
-        not ns_always_accept[ns]    
+        not ns_always_accept[ns]
         defined_in_namespace[[ns, "defaultPolicy"]]
         ns_get(ns, "defaultPolicy") == "scan-result"
-}              
+}
 
 ns_deny_image[[ns, "Image rejected in namespace by scan-result"]] {
         ns_check_scan_result[ns]
@@ -253,7 +253,7 @@ ns_always_scan_result[ns] {
         defined_in_namespace[[ns, "alwaysScanResult"]]
         some i
         prefix := ns_get(ns, "alwaysScanResult")[i]
-        startswith(input.ScanReport.ImageAndTag, prefix)        
+        startswith(input.ScanReport.ImageAndTag, prefix)
 }
 
 ns_check_scan_result[ns] {
@@ -266,11 +266,11 @@ ns_always_reject[[ns,msg]] {
         prefix := ns_get(ns, "alwaysReject")[i]
         startswith(input.ScanReport.ImageAndTag, prefix)
         msg := sprintf("Image rejected - prefix '%s' is blacklisted", [prefix])
-}  
+}
 
 ns_deny_image[[ns, msg]] {
         ns_always_reject[[ns, msg]]
-}        
+}
 
 # Final decission making
 

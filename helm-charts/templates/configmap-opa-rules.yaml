@@ -7,17 +7,15 @@ metadata:
 data:
   rules.rego: |
         package imageadmission
-        policies := {{ toPrettyJson .Values.scanRules | nindent 8 }}
-       
         # Helper variables
-        
+        policies := data.policies
         namespace := input.AdmissionRequest.namespace
 
-{{ if .Values.scanRules.autoGenerate }}
+{{ if .Values.scanPolicies.autoGenerate }}
         {{- $rules := .Files.Get "imageadmission.rego"}}
         {{- if eq $rules "" }}{{ fail "imageadmission.rego file was not found"}}{{ end }}
         {{- $rules | indent 8}}
 {{ end }}
         ###### Begin: Custom rules ######
-        {{ .Values.customRules | nindent 8 }}
+{{ .Values.customRules | indent 8 -}}
         ###### End: Custom rules ######

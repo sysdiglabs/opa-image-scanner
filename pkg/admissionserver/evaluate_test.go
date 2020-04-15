@@ -12,17 +12,20 @@ import (
 
 type mockImageScannerEvaluator struct {
 	Accepted bool
+	AllNull  bool
 }
 
 func (m *mockImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string) {
 	accepted = m.Accepted
-	digestMappings = map[string]string{"image1:tag": "digest1", "image2:tag": "digest2"}
 	errors = []string{"error1", "error2"}
-	pod = &corev1.Pod{
-		Spec: corev1.PodSpec{Containers: []corev1.Container{
-			corev1.Container{Image: "image1:tag"},
-			corev1.Container{Image: "image2:tag"},
-		}},
+	if !m.AllNull {
+		digestMappings = map[string]string{"image1:tag": "digest1", "image2:tag": "digest2"}
+		pod = &corev1.Pod{
+			Spec: corev1.PodSpec{Containers: []corev1.Container{
+				{Image: "image1:tag"},
+				{Image: "image2:tag"},
+			}},
+		}
 	}
 	return
 }
@@ -31,7 +34,7 @@ func (m *mockImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accep
 var _ opaimagescanner.AdmissionEvaluator = (*mockImageScannerEvaluator)(nil)
 
 func TestMutationHookAdmit(t *testing.T) {
-	hook := &mutationHook{evaluator: &mockImageScannerEvaluator{true}}
+	hook := &mutationHook{evaluator: &mockImageScannerEvaluator{true, false}}
 
 	review := &v1beta1.AdmissionRequest{}
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
@@ -77,7 +80,7 @@ func TestEvaluateAccepted(t *testing.T) {
 		json.Unmarshal(b, review)
 	}
 
-	evaluator := mockImageScannerEvaluator{true}
+	evaluator := mockImageScannerEvaluator{true, false}
 	response, digestMappings, _ := Evaluate(review, &evaluator)
 
 	if !response.Allowed {
@@ -110,7 +113,7 @@ func TestEvaluateRejected(t *testing.T) {
 		json.Unmarshal(b, review)
 	}
 
-	evaluator := mockImageScannerEvaluator{false}
+	evaluator := mockImageScannerEvaluator{false, false}
 	response, digestMappings, _ := Evaluate(review, &evaluator)
 
 	if response.Allowed {
@@ -132,4 +135,30 @@ func TestEvaluateRejected(t *testing.T) {
 	if digestMappings["image2:tag"] != "digest2" {
 		t.Fatalf("Unexpected mapping: %s", digestMappings["image2:tag"])
 	}
+}
+
+func TestEvaluateRejectedNilPod(t *testing.T) {
+	review := &v1beta1.AdmissionRequest{}
+
+	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
+		t.Error(err)
+	} else {
+		json.Unmarshal(b, review)
+	}
+
+	evaluator := mockImageScannerEvaluator{false, true}
+	response, _, _ := Evaluate(review, &evaluator)
+
+	if response.Allowed {
+		t.Fatalf("Admission should not be allowed")
+	}
+
+	if response.UID != review.UID {
+		t.Fatalf("Unexpected UID: %s", response.UID)
+	}
+
+	if response.Result.Message != "error1\nerror2" {
+		t.Fatalf("Unexpected Message: %s", response.Result.Message)
+	}
+
 }

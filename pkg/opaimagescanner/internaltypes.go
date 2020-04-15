@@ -18,7 +18,8 @@ deny_image[msg] {
 type opaImageScannerEvaluator struct {
 	scanner         imagescanner.Scanner
 	opaEvaluator    opa.OPAEvaluator
-	getOPARulesFunc GetOPARulesFunction
+	getOPARulesFunc GetStringDataFunction
+	getOPADataFunc  GetStringDataFunction
 }
 
 // Verify that OPAImageScannerEvaluator implements AdmissionEvaluator.

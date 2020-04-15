@@ -26,7 +26,7 @@ func TestDummyDontDeny(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "testInput")
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
 	if err != nil {
 		t.Fatalf("Failed: %v", err)
 	}
@@ -40,10 +40,32 @@ func TestDummyDeny(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "testInput")
-	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules") {
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
+	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules:\n- Image denied") {
+		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason:\n%v", err)
+	}
+}
+
+func TestEvaluateData(t *testing.T) {
+	rules := `
+	package imageadmission
+
+	deny_image[msg] {
+		msg := data.deny_msg
+	}
+
+	`
+
+	data := `
+	{ "deny_msg" : "Deny msg from data" }
+	`
+
+	err := NewEvaluator().Evaluate(regoQuery, rules, data, "")
+
+	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules:\n- Deny msg from data") {
 		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason: %v", err)
 	}
+
 }
 
 func TestEvaluateScanResultPassed(t *testing.T) {
@@ -64,7 +86,7 @@ func TestEvaluateScanResultPassed(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err != nil {
 		t.Fatalf("Failed: %v", err)
 	}
@@ -88,7 +110,7 @@ func TestEvaluateScanResultFailed(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err == nil || !strings.HasPrefix(err.Error(), "Image denied by OPA rules") {
 		t.Fatalf("Failed. Missing 'Image denied by OPA rules' reason: %v", err)
 	}
@@ -122,7 +144,7 @@ func TestEvaluateAdmissionReviewAllowByNamespace(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err != nil {
 		t.Fatalf("Failed: %v", err)
 	}
@@ -158,7 +180,7 @@ func TestEvaluateAdmissionReviewDenyByNamespace(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err == nil || !strings.Contains(err.Error(), "Not allowed in this namespace") {
 		t.Fatalf("Failed. Missing 'Not allowed in this namespace' reason: %v", err)
 	}
@@ -197,7 +219,7 @@ func TestEvaluateAdmissionReviewAllowByPrefix(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err != nil {
 		t.Errorf("Failed: %v", err)
 	}
@@ -237,7 +259,7 @@ func TestEvaluateAdmissionReviewDenyByPrefix(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, input)
+	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
 	if err == nil || !strings.Contains(err.Error(), "Deny blacklisted registry") {
 		t.Errorf("Failed. Missing 'Deny blacklisted registry' reason: %v", err)
 	}

@@ -29,10 +29,12 @@ func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e opaimagescanner.Admissi
 
 		allowed, digestMappings, pod, denyReasons := e.Evaluate(admissionSpec)
 
-		if pod.Name != "" {
-			podName = pod.Name
-		} else if pod.GetObjectMeta().GetGenerateName() != "" {
-			podName = pod.GetObjectMeta().GetGenerateName() + "*"
+		if pod != nil {
+			if pod.Name != "" {
+				podName = pod.Name
+			} else if pod.GetObjectMeta().GetGenerateName() != "" {
+				podName = pod.GetObjectMeta().GetGenerateName() + "*"
+			}
 		}
 
 		klog.Infof("[admission-server] Admission review %s - finished evaluating admission of pod '%s'", admissionSpec.UID, podName)

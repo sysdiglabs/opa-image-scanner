@@ -24,6 +24,15 @@ If release name contains chart name it will be used as a full name.
 {{- end -}}
 {{- end -}}
 
+{{- define "sysdig-image-scanner.tag" -}}
+{{- if .Values.image.tag -}}
+{{- .Values.image.tag -}}
+{{- else -}}
+{{- .Chart.AppVersion -}}
+{{- end -}}
+{{- end -}}
+
+
 {{/*
 Create chart name and version as used by the chart label.
 */}}

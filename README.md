@@ -64,10 +64,10 @@ If you set the value **verboseLog** to *true*, the OPA engine will include addit
 
 ### Evaluation rules
 
-In the *values.yaml* you will find a **scanRules** section where you can set default actions for evaluating the images and scan reports and a **customRules** section:
+In the *values.yaml* you will find a **scanPolicies** section where you can set default actions for evaluating the images and scan reports and a **customRules** section:
 
 ```yaml
-scanRules:
+scanPolicies:
   # If set to "true", a default set of rules will be generated from this YAML values.
   # Otherwise, no rules will be generated, and only "customRules" below will apply
   autoGenerate: true
@@ -106,7 +106,7 @@ scanRules:
 
 
 
-# Define a set of custom rego rules. If scanRules.autoGenerate is true, 
+# Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
 # these customRules are appended to the set of generated rules. 
 # Otherwise, these customRules are the only rules definition,
 customRules: |
@@ -130,9 +130,10 @@ customRules: |
 
 ### Defining custom OPA rules
 
-Deploying via Helm charts will create a configmap with a default set of rules that behave according to the *scanRules* policies defined in the chart values.yaml.
+Deploying via Helm charts will create a configmap with a default set of rules that behave according to the *scanPolicies* defined in the chart values.yaml (which are put into another configmap). When the OPA rules are evaluated, the *scanPolicies* defined in the values.yaml are passed as data.policies.
 
-You can disable the auto generated set of rules by setting *autoGenerate* false, and the Helm chart will only create the package directive and define the *namespace* variable and a variable *policies* with the values of the *scanRules* section converted to *rego* objects.
+You can disable the auto generated set of rules by setting *autoGenerate* false, and the Helm chart will only create the package directive and define the *namespace* variable.
+
 
 So you can write your own rules in the *customRules* key of the values.yaml.
 

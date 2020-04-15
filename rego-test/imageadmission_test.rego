@@ -44,9 +44,9 @@ input_rejected := {
 test_empty_config {
     deny_image["AdmissionRequest is missing in input"] with input as empty_input with data.policies as policies_no_defaults
     deny_image["ScanReport is missing in input"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanRules.defaultPolicy - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanRules.reportPending - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanRules.scanFailed - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid scanPolicies.defaultPolicy - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid scanPolicies.reportPending - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid scanPolicies.scanFailed - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
 }
 
 

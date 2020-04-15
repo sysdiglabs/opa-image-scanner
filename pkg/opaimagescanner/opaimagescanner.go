@@ -19,16 +19,18 @@ type AdmissionEvaluator interface {
 	Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string)
 }
 
-type GetOPARulesFunction func() (string, error)
+type GetStringDataFunction func() (string, error)
 
 func NewEvaluator(
 	scanner imagescanner.Scanner,
 	opaEvaluator opa.OPAEvaluator,
-	getOPARulesFunc GetOPARulesFunction,
+	getOPARulesFunc GetStringDataFunction,
+	getOPADataFunc GetStringDataFunction,
 ) *opaImageScannerEvaluator {
 	return &opaImageScannerEvaluator{
 		scanner:         scanner,
 		opaEvaluator:    opaEvaluator,
 		getOPARulesFunc: getOPARulesFunc,
+		getOPADataFunc:  getOPADataFunc,
 	}
 }

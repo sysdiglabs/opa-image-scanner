@@ -21,7 +21,7 @@ sysdigSecureToken: ""
 #Set to true to increase verbosity and output OPA input and rules in the log
 verboseLog: false
 
-scanRules:
+scanPolicies:
 
   # If set to "true", a default set of rules will be generated from this YAML values.
   # Otherwise, no rules will be generated, and only "customRules" below will apply
@@ -59,10 +59,50 @@ scanRules:
   #    defaultPolicy: accept
   #    alwaysReject: []
 
-# Define a set of custom rego rules. If scanRules.autoGenerate is true, 
+# Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
 # these customRules are appended to the set of generated rules. 
 # Otherwise, these customRules are the only rules definition,
 customRules: |
+      my_example_rule {
+          # Some conditions...
+          false
+      }
+
+      other_rule {
+          # Some other conditions...
+          true
+      }
+
+      deny_image["This is a custom deny message"] {
+          my_example_rule
+          other_rule
+      }
+
+preScanPolicies:
+
+  autoGenerate: true
+
+  alwaysAccept: 
+    - "my.totally-trusted-registry.com/"
+
+  # These 2 registries will always be rejected unless 
+  alwaysReject:
+    - "bad-registry.com/"
+    - "malware-registry.io/"
+  
+  byNamespace: {}
+  #  ns-prod:
+  #    # All images rejected by default in this namespace
+  #    # Images from "my-trusted-registry.com/" will be always accepted
+  #    alwasyAccept:
+  #      - "my-trusted-registry.com/"
+  #  ns-playground:
+  #    alwaysReject: []
+
+# Define a set of custom rego rules. If preScanPolicies.autoGenerate is true, 
+# these preCustomRules are appended to the set of generated rules. 
+# Otherwise, these preCustomRules are the only rules definition,
+preCustomRules: |
       my_example_rule {
           # Some conditions... 
           false
@@ -71,6 +111,11 @@ customRules: |
       other_rule {
           # Some other conditions...
           true
+      }
+
+      allow_image {
+          # Put conditions in here
+          false
       }
 
       deny_image["This is a custom deny message"] {

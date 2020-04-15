@@ -1,4 +1,4 @@
-ARG BASE_IMAGE="golang:1.13.4"
+ARG BASE_IMAGE="golang:1.14.2"
 
 FROM ${BASE_IMAGE} as build-env
 
