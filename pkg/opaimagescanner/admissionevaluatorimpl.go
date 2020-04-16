@@ -6,30 +6,29 @@ import (
 
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
-//Implementation of AdmissionEvaluator interface
-func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string) {
+//Implementation of ImageScannerAdmissionEvaluator interface
+func (e *opaImageScannerEvaluator) ScanAndEvaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accepted bool, digestMappings map[string]string, errors []string) {
 
 	accepted = true
 	regoRules, err := e.getOPARulesFunc()
 	if err != nil {
 		regoRules = regoDefaultRules
 	}
+
 	data, err := e.getOPADataFunc()
 	if err != nil {
-		return false, nil, nil, []string{err.Error()}
+		return false, nil, []string{err.Error()}
 	}
 
 	if a == nil {
-		return false, nil, nil, []string{"Admission request is <nil>"}
+		return false, nil, []string{"Admission request is <nil>"}
 	}
 
-	pod, err = getPod(a)
-	if err != nil {
-		return false, nil, nil, []string{err.Error()}
+	if pod == nil {
+		return false, nil, []string{"Pod data is <nil>"}
 	}
 
 	digestMappings = make(map[string]string)
@@ -50,7 +49,7 @@ func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accept
 
 }
 
-func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules, data string) (accepted bool, digest string, errors []string) {
+func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *corev1.Pod, container *corev1.Container, regoRules, data string) (accepted bool, digest string, errors []string) {
 
 	var report *imagescanner.ScanReport
 
@@ -83,23 +82,4 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 
 	return true, digest, nil
 
-}
-
-func getPod(a *v1beta1.AdmissionRequest) (*corev1.Pod, error) {
-
-	raw := a.Object.Raw
-
-	if raw == nil {
-		return nil, fmt.Errorf("Pod data is <nil>")
-	}
-
-	pod := corev1.Pod{}
-	deserializer := codecs.UniversalDeserializer()
-	if _, schema, err := deserializer.Decode(raw, nil, &pod); err != nil {
-		return nil, err
-	} else if schema == nil {
-		return nil, fmt.Errorf("Could not find a schema")
-	}
-
-	return &pod, nil
 }

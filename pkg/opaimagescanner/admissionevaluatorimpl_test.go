@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"k8s.io/api/admission/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type StartScanReturn struct {
@@ -34,6 +35,12 @@ type mockImageScanner struct {
 
 	StartScanCalled bool
 	GetReportCalled bool
+}
+
+var pod = &corev1.Pod{
+	Spec: corev1.PodSpec{Containers: []corev1.Container{
+		{Image: "mysaferegistry.io/container-image:1.01"},
+	}},
 }
 
 func (s *mockImageScanner) StartScan(imageAndTag string) (string, error) {
@@ -126,11 +133,11 @@ func TestDummy(t *testing.T) {
 		ExpectedData:  mockData,
 	}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, digestMappings, _, err := evaluator.Evaluate(a)
+	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
 		t.Error(err)
 	}
@@ -157,9 +164,9 @@ func TestNilAdmissionReview(t *testing.T) {
 	scanner := &mockImageScanner{}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
-	accepted, _, _, err := evaluator.Evaluate(nil)
+	accepted, _, err := evaluator.ScanAndEvaluate(nil, nil)
 	if accepted || len(err) != 1 || err[0] != "Admission request is <nil>" {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -175,10 +182,10 @@ func TestEmptyAdmissionReview(t *testing.T) {
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 	a := &v1beta1.AdmissionRequest{}
 
-	accepted, _, _, err := evaluator.Evaluate(a)
+	accepted, _, err := evaluator.ScanAndEvaluate(a, nil)
 	if accepted || len(err) != 1 || err[0] != "Pod data is <nil>" {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -194,11 +201,11 @@ func TestStartScanFails(t *testing.T) {
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, _, _, err := evaluator.Evaluate(a)
+	accepted, _, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
 		t.Error(err)
 	}
@@ -229,11 +236,11 @@ func TestGetReportFails(t *testing.T) {
 		GetReportReturn:     GetReportReturn{Report: nil, Error: fmt.Errorf("Some error")}}
 	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, digestMappings, _, err := evaluator.Evaluate(a)
+	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
 		t.Error(err)
 	}
@@ -281,11 +288,11 @@ func TestEvaluationRejects(t *testing.T) {
 		ReturnError:   fmt.Errorf("Reject this container"),
 	}
 
-	evaluator := NewEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
-	accepted, _, _, err := evaluator.Evaluate(a)
+	accepted, _, err := evaluator.ScanAndEvaluate(a, pod)
 	if accepted || len(err) != 1 || !strings.Contains(err[0], "Reject this container") {
 		t.Errorf("Unexpected evaluation error:\n%v", err)
 	}

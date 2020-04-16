@@ -22,5 +22,5 @@ type opaImageScannerEvaluator struct {
 	getOPADataFunc  GetStringDataFunction
 }
 
-// Verify that OPAImageScannerEvaluator implements AdmissionEvaluator.
-var _ AdmissionEvaluator = (*opaImageScannerEvaluator)(nil)
+// Verify that opaImageScannerEvaluator implements ImageScannerAdmissionEvaluator.
+var _ imagescanner.ImageScannerAdmissionEvaluator = (*opaImageScannerEvaluator)(nil)

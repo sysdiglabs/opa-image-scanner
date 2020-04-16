@@ -15,13 +15,9 @@ type OPAInput struct {
 	ContainerObject  *corev1.Container
 }
 
-type AdmissionEvaluator interface {
-	Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string)
-}
-
 type GetStringDataFunction func() (string, error)
 
-func NewEvaluator(
+func NewImageScannerEvaluator(
 	scanner imagescanner.Scanner,
 	opaEvaluator opa.OPAEvaluator,
 	getOPARulesFunc GetStringDataFunction,

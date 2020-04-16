@@ -43,7 +43,6 @@ func buildJSONPatch(pod *corev1.Pod, digestMapping map[string]string) string {
 
 	if pod == nil {
 		return "[]"
-
 	}
 
 	var sb strings.Builder

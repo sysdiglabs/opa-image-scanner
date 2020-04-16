@@ -45,6 +45,9 @@
         "app": "test-pod",
         "pod-template-hash": "xxxxxxxxxx"
       },
+      "annotations": {
+        "my-annotation": "annotation value"
+      },
       "ownerReferences": [
         {
           "apiVersion": "apps/v1",
