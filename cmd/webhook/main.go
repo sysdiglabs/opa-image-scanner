@@ -73,6 +73,8 @@ func getOPARules() (string, error) {
 
 func main() {
 	klog.Infof("Starting AdmissionServer...")
-	admissionserver.Run(opaimagescanner.NewImageScannerEvaluator(imageScanner, opaEvaluator, getOPARules, getOPAData))
+	admissionserver.Run(
+		nil,
+		opaimagescanner.NewImageScannerEvaluator(imageScanner, opaEvaluator, getOPARules, getOPAData))
 	klog.Info("Exiting...")
 }

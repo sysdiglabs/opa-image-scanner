@@ -6,8 +6,10 @@ import (
 	genericadmissionserver "github.com/openshift/generic-admission-server/pkg/cmd"
 )
 
-func Run(e imagescanner.ImageScannerAdmissionEvaluator) {
+func Run(preScanEvaluator imagescanner.PreScanAdmissionEvaluator, imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator) {
 	genericadmissionserver.RunAdmissionServer(
-		&mutationHook{evaluator: e},
+		&mutationHook{
+			preScanEvaluator:      preScanEvaluator,
+			imageScannerEvaluator: imageScannerEvaluator},
 	)
 }

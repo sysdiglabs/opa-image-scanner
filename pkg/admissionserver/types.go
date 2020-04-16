@@ -9,7 +9,8 @@ import (
 )
 
 type mutationHook struct {
-	evaluator imagescanner.ImageScannerAdmissionEvaluator
+	preScanEvaluator      imagescanner.PreScanAdmissionEvaluator
+	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator
 }
 
 // toAdmissionResponse is a helper function to create an AdmissionResponse

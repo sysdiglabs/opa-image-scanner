@@ -22,5 +22,9 @@ type Scanner interface {
 }
 
 type ImageScannerAdmissionEvaluator interface {
-	ScanAndEvaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accepted bool, digestMappings map[string]string, errors []string)
+	ScanAndEvaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accepted bool, digestMappings map[string]string, rejectReasons []string)
+}
+
+type PreScanAdmissionEvaluator interface {
+	Evaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accept, reject bool, rejectReasons []string)
 }

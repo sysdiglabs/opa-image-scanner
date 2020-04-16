@@ -14,7 +14,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e imagescanner.ImageScannerAdmissionEvaluator) (*v1beta1.AdmissionResponse, map[string]string, *corev1.Pod) {
+func Evaluate(
+	admissionSpec *v1beta1.AdmissionRequest,
+	preScanEvaluator imagescanner.PreScanAdmissionEvaluator,
+	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator,
+) (response *v1beta1.AdmissionResponse, digestMappings map[string]string, pod *corev1.Pod) {
 
 	if err := validatePod(admissionSpec); err != nil {
 		klog.Errorf("[admission-server] %v", err)
@@ -40,13 +44,19 @@ func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e imagescanner.ImageScann
 			}
 		}
 
-		klog.Infof("[admission-server] Admission review %s - evaluating admission of pod '%s'", admissionSpec.UID, podName)
+		var allowed, rejected bool
+		var denyReasons []string
+		if preScanEvaluator != nil {
+			klog.Infof("[admission-server] Admission review %s - Pre-Scan evaluation of pod '%s'", admissionSpec.UID, podName)
+			allowed, rejected, denyReasons = preScanEvaluator.Evaluate(admissionSpec, pod)
+			klog.Infof("[admission-server] Admission review %s - finished Pre-Scan evaluation of pod '%s'", admissionSpec.UID, podName)
+		}
 
-		// TODO: Pre-scan rules, and skip ImageScanner if directly accepted
-
-		allowed, digestMappings, denyReasons := e.ScanAndEvaluate(admissionSpec, pod)
-
-		klog.Infof("[admission-server] Admission review %s - finished evaluating admission of pod '%s'", admissionSpec.UID, podName)
+		if !allowed && !rejected {
+			klog.Infof("[admission-server] Admission review %s - Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
+			allowed, digestMappings, denyReasons = imageScannerEvaluator.ScanAndEvaluate(admissionSpec, pod)
+			klog.Infof("[admission-server] Admission review %s - finished Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
+		}
 
 		if allowed {
 			klog.Infof("[admission-server] Admission review %s - pod '%s' accepted", admissionSpec.UID, podName)
