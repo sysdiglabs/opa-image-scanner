@@ -43,10 +43,10 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: echo "package imageadmission" > rego-test/imageadmission.rego
-      - run: echo "policies := data.policies" >> rego-test/imageadmission.rego
-      - run: echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
-      - run: cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
+      - run: echo "package imageadmission" > rego-test/postscanrules.rego
+      - run: echo "policies := data.policies" >> rego-test/postscanrules.rego
+      - run: echo "namespace := input.AdmissionRequest.namespace" >> rego-test/postscanrules.rego
+      - run: cat helm-charts/postscanrules.rego >> rego-test/postscanrules.rego
       - run: docker run --rm -v $(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 workflows:

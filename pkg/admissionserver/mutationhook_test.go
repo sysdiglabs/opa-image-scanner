@@ -13,7 +13,7 @@ func TestMutationHookAdmit(t *testing.T) {
 
 	review := &v1beta1.AdmissionRequest{}
 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, review)
 	}
@@ -51,7 +51,7 @@ func TestMutationHookPreserveAnnotations(t *testing.T) {
 
 	review := &v1beta1.AdmissionRequest{}
 	if b, err := ioutil.ReadFile("./assets/admission-review-with-annotations.json"); err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	} else {
 		json.Unmarshal(b, review)
 	}
@@ -83,149 +83,3 @@ func TestMutationHookPreserveAnnotations(t *testing.T) {
 		t.Fatalf("Unexpected JSON Patch: %s", string(response.Patch))
 	}
 }
-
-// func TestMutationHookPreScanAccept(t *testing.T) {
-// 	imageScannerEvaluator := &mockImageScannerEvaluator{Accepted: false}
-// 	hook := &mutationHook{
-// 		preScanEvaluator:      &mockPreScanEvaluator{true, false},
-// 		imageScannerEvaluator: imageScannerEvaluator,
-// 	}
-
-// 	review := &v1beta1.AdmissionRequest{}
-// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-// 		t.Error(err)
-// 	} else {
-// 		json.Unmarshal(b, review)
-// 	}
-
-// 	response := hook.Admit(review)
-
-// 	if imageScannerEvaluator.ScanAndEvaluateCalled {
-// 		t.Fatalf("ScanAndEvaluate should not be called")
-// 	}
-
-// 	if !response.Allowed {
-// 		t.Fatalf("Admission should not be rejected")
-// 	}
-
-// 	if response.UID != review.UID {
-// 		t.Fatalf("Unexpected UID: %s", response.UID)
-// 	}
-
-// 	if response.Result != nil {
-// 		t.Fatalf("Response Result should be nil")
-// 	}
-// }
-
-// func TestMutationHookPreScanRejected(t *testing.T) {
-// 	imageScannerEvaluator := &mockImageScannerEvaluator{Accepted: false}
-// 	hook := &mutationHook{
-// 		preScanEvaluator:      &mockPreScanEvaluator{false, true},
-// 		imageScannerEvaluator: imageScannerEvaluator,
-// 	}
-
-// 	review := &v1beta1.AdmissionRequest{}
-// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-// 		t.Error(err)
-// 	} else {
-// 		json.Unmarshal(b, review)
-// 	}
-
-// 	response := hook.Admit(review)
-
-// 	if imageScannerEvaluator.ScanAndEvaluateCalled {
-// 		t.Fatalf("ScanAndEvaluate should not be called")
-// 	}
-
-// 	if response.Allowed {
-// 		t.Fatalf("Admission should not be allowed")
-// 	}
-
-// 	if response.UID != review.UID {
-// 		t.Fatalf("Unexpected UID: %s", response.UID)
-// 	}
-
-// 	if response.Result == nil {
-// 		t.Fatalf("Response Result should not be nil")
-// 	}
-
-// 	if response.Result.Message != "pre-error-1\npre-error-2" {
-// 		t.Fatalf("Unexpected Message: %s", response.Result.Message)
-// 	}
-// }
-
-// func TestMutationHookPreScanNil(t *testing.T) {
-// 	imageScannerEvaluator := &mockImageScannerEvaluator{Accepted: false}
-
-// 	hook := &mutationHook{
-// 		preScanEvaluator:      nil,
-// 		imageScannerEvaluator: imageScannerEvaluator,
-// 	}
-
-// 	review := &v1beta1.AdmissionRequest{}
-// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-// 		t.Error(err)
-// 	} else {
-// 		json.Unmarshal(b, review)
-// 	}
-
-// 	response := hook.Admit(review)
-
-// 	if !imageScannerEvaluator.ScanAndEvaluateCalled {
-// 		t.Fatalf("ScanAndEvaluate should be called")
-// 	}
-
-// 	if response.Allowed {
-// 		t.Fatalf("Admission should not be allowed")
-// 	}
-
-// 	if response.UID != review.UID {
-// 		t.Fatalf("Unexpected UID: %s", response.UID)
-// 	}
-
-// 	if response.Result == nil {
-// 		t.Fatalf("Response Result should not be nil")
-// 	}
-
-// 	if response.Result.Message != "error1\nerror2" {
-// 		t.Fatalf("Unexpected Message: %s", response.Result.Message)
-// 	}
-// }
-
-// func TestMutationHookPreScanIndecisive(t *testing.T) {
-// 	imageScannerEvaluator := &mockImageScannerEvaluator{Accepted: false}
-
-// 	hook := &mutationHook{
-// 		preScanEvaluator:      &mockPreScanEvaluator{},
-// 		imageScannerEvaluator: imageScannerEvaluator,
-// 	}
-
-// 	review := &v1beta1.AdmissionRequest{}
-// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-// 		t.Error(err)
-// 	} else {
-// 		json.Unmarshal(b, review)
-// 	}
-
-// 	response := hook.Admit(review)
-
-// 	if !imageScannerEvaluator.ScanAndEvaluateCalled {
-// 		t.Fatalf("ScanAndEvaluate should be called")
-// 	}
-
-// 	if response.Allowed {
-// 		t.Fatalf("Admission should not be allowed")
-// 	}
-
-// 	if response.UID != review.UID {
-// 		t.Fatalf("Unexpected UID: %s", response.UID)
-// 	}
-
-// 	if response.Result == nil {
-// 		t.Fatalf("Response Result should not be nil")
-// 	}
-
-// 	if response.Result.Message != "error1\nerror2" {
-// 		t.Fatalf("Unexpected Message: %s", response.Result.Message)
-// 	}
-// }

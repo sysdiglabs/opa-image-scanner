@@ -34,14 +34,3 @@ func (m *mockImageScannerEvaluator) ScanAndEvaluate(a *v1beta1.AdmissionRequest,
 
 // Verify that mockImageScannerEvaluator implements opaimagescanner.ImageScannerAdmissionEvaluator.
 var _ imagescanner.ImageScannerAdmissionEvaluator = (*mockImageScannerEvaluator)(nil)
-
-// func (m *mockPreScanEvaluator) Evaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accepted, rejected bool, rejectReasons []string) {
-// 	accepted = m.Accept
-// 	rejected = m.Reject
-
-// 	if !accepted {
-// 		rejectReasons = []string{"pre-error-1", "pre-error-2"}
-// 	}
-
-// 	return
-// }

@@ -100,7 +100,146 @@ func mockGetOPAData() (string, error) {
 var mockRules, _ = mockGetOPARules()
 var mockData, _ = mockGetOPAData()
 
-func TestDummy(t *testing.T) {
+func TestPreScanAccepted(t *testing.T) {
+
+	scanner := &mockImageScanner{
+		T:                   t,
+		ExpectedImageAndTag: "mysaferegistry.io/container-image:1.01",
+		ExpectedImageDigest: "TestDigest",
+	}
+
+	var opaEvaluator *mockOPAEvaluator
+	var preOpaEvaluatorCalled int = 0
+
+	preScanEvaluatorCallback := func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		preOpaEvaluatorCalled++
+
+		if rules != mockRules {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
+		}
+
+		if data != mockData {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
+
+		}
+		if (preOpaEvaluatorCalled) == 1 {
+			if query != "data.imageadmission.pre_allow_pod" {
+				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+			}
+			return []opa.EvaluationResult{
+				[]opa.Expression{},
+			}, nil
+		} else {
+			t.Fatalf("Should not call evaluator: %s", query)
+			return nil, nil
+		}
+	}
+
+	opaEvaluator = &mockOPAEvaluator{preScanEvaluatorCallback}
+
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
+
+	a := loadAdmissionRequest("./assets/admission-review.json", t)
+
+	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
+	if !accepted {
+		t.Fatal(err)
+	}
+
+	if len(digestMappings) > 0 {
+		t.Fatalf("Unexpected digest mapping: %v", digestMappings)
+	}
+
+	if scanner.StartScanCalled {
+		t.Fatalf("StartScan should not be called")
+	}
+
+	if scanner.GetReportCalled {
+		t.Fatalf("GetReportCalled should not be called")
+	}
+
+	if preOpaEvaluatorCalled != 1 {
+		t.Fatalf("OPAEvaluator.Evaluate was not called only once")
+	}
+}
+
+func TestPreScanRejected(t *testing.T) {
+
+	scanner := &mockImageScanner{
+		T:                   t,
+		ExpectedImageAndTag: "mysaferegistry.io/container-image:1.01",
+		ExpectedImageDigest: "TestDigest",
+	}
+
+	var opaEvaluator *mockOPAEvaluator
+	var preOpaEvaluatorCalled int = 0
+
+	preScanEvaluatorCallback := func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		preOpaEvaluatorCalled++
+
+		if rules != mockRules {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
+		}
+
+		if data != mockData {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
+
+		}
+		if (preOpaEvaluatorCalled) == 1 {
+			if query != "data.imageadmission.pre_allow_pod" {
+				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+			}
+			return []opa.EvaluationResult{}, nil
+		} else if (preOpaEvaluatorCalled) == 2 {
+			if query != "data.imageadmission.pre_deny_pod" {
+				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+			}
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{"Rejected in pre-scan"}},
+				},
+			}, nil
+		} else {
+			t.Fatalf("Should not call evaluator: %s", query)
+			return nil, nil
+		}
+	}
+
+	opaEvaluator = &mockOPAEvaluator{preScanEvaluatorCallback}
+
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
+
+	a := loadAdmissionRequest("./assets/admission-review.json", t)
+
+	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
+
+	if accepted {
+		t.Fatal("Should not be accepted")
+	}
+
+	if len(digestMappings) > 0 {
+		t.Fatalf("Unexpected digest mapping: %v", digestMappings)
+	}
+
+	if scanner.StartScanCalled {
+		t.Fatalf("StartScan should not be called")
+	}
+
+	if scanner.GetReportCalled {
+		t.Fatalf("GetReportCalled should not be called")
+	}
+
+	if preOpaEvaluatorCalled != 2 {
+		t.Fatalf("OPAEvaluator.Evaluate was not called only twice")
+	}
+
+	if accepted || len(err) != 1 || err[0] != "Pre-scan rejected. Reasons: Rejected in pre-scan" {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+}
+
+func TestEvaluationAccepts(t *testing.T) {
 
 	report := &imagescanner.ScanReport{
 		Status: imagescanner.StatusAccepted,
@@ -177,7 +316,7 @@ func TestDummy(t *testing.T) {
 
 	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if digestMappings["mysaferegistry.io/container-image:1.01"] != "TestDigest" {
@@ -268,7 +407,7 @@ func TestStartScanFails(t *testing.T) {
 
 	accepted, _, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if !scanner.StartScanCalled {
@@ -321,7 +460,7 @@ func TestGetReportFails(t *testing.T) {
 
 	accepted, digestMappings, err := evaluator.ScanAndEvaluate(a, pod)
 	if !accepted {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if digestMappings["mysaferegistry.io/container-image:1.01"] != "sha256:somedigest" {
