@@ -16,7 +16,6 @@ import (
 
 func Evaluate(
 	admissionSpec *v1beta1.AdmissionRequest,
-	preScanEvaluator imagescanner.PreScanAdmissionEvaluator,
 	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator,
 ) (response *v1beta1.AdmissionResponse, digestMappings map[string]string, pod *corev1.Pod) {
 
@@ -44,19 +43,9 @@ func Evaluate(
 			}
 		}
 
-		var allowed, rejected bool
-		var denyReasons []string
-		if preScanEvaluator != nil {
-			klog.Infof("[admission-server] Admission review %s - Pre-Scan evaluation of pod '%s'", admissionSpec.UID, podName)
-			allowed, rejected, denyReasons = preScanEvaluator.Evaluate(admissionSpec, pod)
-			klog.Infof("[admission-server] Admission review %s - finished Pre-Scan evaluation of pod '%s'", admissionSpec.UID, podName)
-		}
-
-		if !allowed && !rejected {
-			klog.Infof("[admission-server] Admission review %s - Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
-			allowed, digestMappings, denyReasons = imageScannerEvaluator.ScanAndEvaluate(admissionSpec, pod)
-			klog.Infof("[admission-server] Admission review %s - finished Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
-		}
+		klog.Infof("[admission-server] Admission review %s - Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
+		allowed, digestMappings, denyReasons := imageScannerEvaluator.ScanAndEvaluate(admissionSpec, pod)
+		klog.Infof("[admission-server] Admission review %s - finished Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
 
 		if allowed {
 			klog.Infof("[admission-server] Admission review %s - pod '%s' accepted", admissionSpec.UID, podName)

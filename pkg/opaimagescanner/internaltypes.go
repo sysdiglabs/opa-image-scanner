@@ -7,6 +7,9 @@ import (
 
 const regoQuery string = "data.imageadmission.deny_image"
 
+const regoPreScanAllowQuery string = "data.imageadmission.pre_allow_pod"
+const regoPreScanRejectQuery string = "data.imageadmission.pre_deny_pod"
+
 const regoDefaultRules string = `
 package imageadmission
 
@@ -15,11 +18,20 @@ deny_image[msg] {
 }
 `
 
+const regoDefaultPreScanRules string = `
+package imageadmission
+
+pre_deny_pod[msg] {
+	msg := "No pre-scan rules defined. Please define 'imageadmission' package with pre_deny_pod[msg] rules"
+}
+`
+
 type opaImageScannerEvaluator struct {
-	scanner         imagescanner.Scanner
-	opaEvaluator    opa.OPAEvaluator
-	getOPARulesFunc GetStringDataFunction
-	getOPADataFunc  GetStringDataFunction
+	scanner                imagescanner.Scanner
+	opaEvaluator           opa.OPAEvaluator
+	getOPARulesFunc        GetStringDataFunction
+	getOPAPreScanRulesFunc GetStringDataFunction
+	getOPADataFunc         GetStringDataFunction
 }
 
 // Verify that opaImageScannerEvaluator implements ImageScannerAdmissionEvaluator.

@@ -9,7 +9,6 @@ import (
 )
 
 type mutationHook struct {
-	preScanEvaluator      imagescanner.PreScanAdmissionEvaluator
 	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator
 }
 

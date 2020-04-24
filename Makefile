@@ -13,10 +13,10 @@ test-go:
 	go test ./...
 
 test-rego:
-	echo "package imageadmission" > rego-test/imageadmission.rego
-	echo "policies := data.policies" >> rego-test/imageadmission.rego
-	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
-	cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
+	echo "package imageadmission" > rego-test/postscanrules.rego
+	echo "policies := data.policies" >> rego-test/postscanrules.rego
+	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/postscanrules.rego
+	cat helm-charts/postscanrules.rego >> rego-test/postscanrules.rego
 	docker run --rm -v $$(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 cert: cert.crt secret-tls.yaml

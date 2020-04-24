@@ -44,8 +44,8 @@ After a few seconds, this chart will deploy all the required components, which i
  * Create a service account for the webhook service pod(s).
  * Roles and permissions to allow the SA authenticate the API server, as well as permissions to delegate auth decisions to the Kubernetes core API server.
  * Create the webhook deployment and service
- * Create a ConfigMap with a predefined set of rules to cover most common use cases (if scanPolicies.autoGenerate is set to *true*)
- * Create a ConfigMap with a JSON dump of the **scanPolicies** settings in values.yaml. The value of this scanPolicies change the evaluation of the OPA rules.
+ * Create a ConfigMap with a predefined set of rules to cover most common use cases (if **scanPolicies.autoGenerate** is set to *true*)
+ * Create a ConfigMap with a JSON dump of the **scanPolicies** settings in *values.yaml*. The value of these **scanPolicies** change the evaluation of the OPA rules.
 
 ### Mutating admission controller
 

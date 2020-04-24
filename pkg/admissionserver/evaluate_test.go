@@ -18,7 +18,7 @@ func TestEvaluateAccepted(t *testing.T) {
 	}
 
 	evaluator := mockImageScannerEvaluator{Accepted: true}
-	response, digestMappings, _ := Evaluate(review, nil, &evaluator)
+	response, digestMappings, _ := Evaluate(review, &evaluator)
 
 	if !response.Allowed {
 		t.Fatalf("Admission should not be allowed")
@@ -51,7 +51,7 @@ func TestEvaluateRejected(t *testing.T) {
 	}
 
 	evaluator := mockImageScannerEvaluator{Accepted: false}
-	response, digestMappings, _ := Evaluate(review, nil, &evaluator)
+	response, digestMappings, _ := Evaluate(review, &evaluator)
 
 	if response.Allowed {
 		t.Fatalf("Admission should not be allowed")
@@ -84,7 +84,7 @@ func TestEvaluateRejectedNilPod(t *testing.T) {
 	}
 
 	evaluator := mockImageScannerEvaluator{Accepted: false, AllNull: true}
-	response, _, _ := Evaluate(review, nil, &evaluator)
+	response, _, _ := Evaluate(review, &evaluator)
 
 	if response.Allowed {
 		t.Fatalf("Admission should not be allowed")
@@ -100,98 +100,98 @@ func TestEvaluateRejectedNilPod(t *testing.T) {
 
 }
 
-func TestEvaluatePreScanAccepted(t *testing.T) {
-	review := &v1beta1.AdmissionRequest{}
+// func TestEvaluatePreScanAccepted(t *testing.T) {
+// 	review := &v1beta1.AdmissionRequest{}
 
-	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
-	} else {
-		json.Unmarshal(b, review)
-	}
+// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
+// 		t.Error(err)
+// 	} else {
+// 		json.Unmarshal(b, review)
+// 	}
 
-	preEvaluator := mockPreScanEvaluator{Accept: true}
-	evaluator := mockImageScannerEvaluator{Accepted: false}
-	response, _, _ := Evaluate(review, &preEvaluator, &evaluator)
+// 	preEvaluator := mockPreScanEvaluator{Accept: true}
+// 	evaluator := mockImageScannerEvaluator{Accepted: false}
+// 	response, _, _ := Evaluate(review, &preEvaluator, &evaluator)
 
-	if evaluator.ScanAndEvaluateCalled {
-		t.Fatalf("ScanAndEvaluate should not be called")
-	}
+// 	if evaluator.ScanAndEvaluateCalled {
+// 		t.Fatalf("ScanAndEvaluate should not be called")
+// 	}
 
-	if !response.Allowed {
-		t.Fatalf("Admission should not be rejected")
-	}
+// 	if !response.Allowed {
+// 		t.Fatalf("Admission should not be rejected")
+// 	}
 
-	if response.UID != review.UID {
-		t.Fatalf("Unexpected UID: %s", response.UID)
-	}
+// 	if response.UID != review.UID {
+// 		t.Fatalf("Unexpected UID: %s", response.UID)
+// 	}
 
-}
+// }
 
-func TestEvaluatePreScanRejected(t *testing.T) {
-	review := &v1beta1.AdmissionRequest{}
+// func TestEvaluatePreScanRejected(t *testing.T) {
+// 	review := &v1beta1.AdmissionRequest{}
 
-	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
-	} else {
-		json.Unmarshal(b, review)
-	}
+// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
+// 		t.Error(err)
+// 	} else {
+// 		json.Unmarshal(b, review)
+// 	}
 
-	preEvaluator := mockPreScanEvaluator{Reject: true}
-	evaluator := mockImageScannerEvaluator{Accepted: true}
-	response, _, _ := Evaluate(review, &preEvaluator, &evaluator)
+// 	preEvaluator := mockPreScanEvaluator{Reject: true}
+// 	evaluator := mockImageScannerEvaluator{Accepted: true}
+// 	response, _, _ := Evaluate(review, &preEvaluator, &evaluator)
 
-	if evaluator.ScanAndEvaluateCalled {
-		t.Fatalf("ScanAndEvaluate should not be called")
-	}
+// 	if evaluator.ScanAndEvaluateCalled {
+// 		t.Fatalf("ScanAndEvaluate should not be called")
+// 	}
 
-	if response.Allowed {
-		t.Fatalf("Admission should not be allowed")
-	}
+// 	if response.Allowed {
+// 		t.Fatalf("Admission should not be allowed")
+// 	}
 
-	if response.UID != review.UID {
-		t.Fatalf("Unexpected UID: %s", response.UID)
-	}
+// 	if response.UID != review.UID {
+// 		t.Fatalf("Unexpected UID: %s", response.UID)
+// 	}
 
-	if response.Result.Message != "pre-error-1\npre-error-2" {
-		t.Fatalf("Unexpected Message: %s", response.Result.Message)
-	}
+// 	if response.Result.Message != "pre-error-1\npre-error-2" {
+// 		t.Fatalf("Unexpected Message: %s", response.Result.Message)
+// 	}
 
-}
+// }
 
-func TestEvaluatePreScanIndecisive(t *testing.T) {
-	review := &v1beta1.AdmissionRequest{}
+// func TestEvaluatePreScanIndecisive(t *testing.T) {
+// 	review := &v1beta1.AdmissionRequest{}
 
-	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
-		t.Error(err)
-	} else {
-		json.Unmarshal(b, review)
-	}
+// 	if b, err := ioutil.ReadFile("./assets/admission-review.json"); err != nil {
+// 		t.Error(err)
+// 	} else {
+// 		json.Unmarshal(b, review)
+// 	}
 
-	preEvaluator := mockPreScanEvaluator{}
-	evaluator := mockImageScannerEvaluator{Accepted: true}
-	response, digestMappings, _ := Evaluate(review, &preEvaluator, &evaluator)
+// 	preEvaluator := mockPreScanEvaluator{}
+// 	evaluator := mockImageScannerEvaluator{Accepted: true}
+// 	response, digestMappings, _ := Evaluate(review, &preEvaluator, &evaluator)
 
-	if !evaluator.ScanAndEvaluateCalled {
-		t.Fatalf("ScanAndEvaluate should be called")
-	}
+// 	if !evaluator.ScanAndEvaluateCalled {
+// 		t.Fatalf("ScanAndEvaluate should be called")
+// 	}
 
-	if !response.Allowed {
-		t.Fatalf("Admission should not be allowed")
-	}
+// 	if !response.Allowed {
+// 		t.Fatalf("Admission should not be allowed")
+// 	}
 
-	if response.UID != review.UID {
-		t.Fatalf("Unexpected UID: %s", response.UID)
-	}
+// 	if response.UID != review.UID {
+// 		t.Fatalf("Unexpected UID: %s", response.UID)
+// 	}
 
-	if response.Result != nil {
-		t.Fatalf("Response Result should be nil")
-	}
+// 	if response.Result != nil {
+// 		t.Fatalf("Response Result should be nil")
+// 	}
 
-	if digestMappings["image1:tag1"] != "digest1" {
-		t.Fatalf("Unexpected mapping: %s", digestMappings["image1:tag1"])
-	}
+// 	if digestMappings["image1:tag1"] != "digest1" {
+// 		t.Fatalf("Unexpected mapping: %s", digestMappings["image1:tag1"])
+// 	}
 
-	if digestMappings["image2:tag2"] != "digest2" {
-		t.Fatalf("Unexpected mapping: %s", digestMappings["image2:tag2"])
-	}
-}
+// 	if digestMappings["image2:tag2"] != "digest2" {
+// 		t.Fatalf("Unexpected mapping: %s", digestMappings["image2:tag2"])
+// 	}
+// }

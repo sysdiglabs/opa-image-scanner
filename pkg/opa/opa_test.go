@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"image-scan-webhook/pkg/imagescanner"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	"k8s.io/api/admission/v1beta1"
@@ -17,6 +16,50 @@ type OPAInput struct {
 	AdmissionRequest *v1beta1.AdmissionRequest
 }
 
+func expectNoMessages(t *testing.T, res []EvaluationResult, err error) {
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(res) != 1 {
+		t.Fatalf("More results than expeced: %d", len(res))
+	}
+
+	if len(res[0]) != 1 {
+		t.Fatalf("More expressions than expected: %d", len(res))
+	}
+
+	if _, ok := res[0][0].Value.([]interface{}); !ok {
+		t.Fatalf("Unexpected expression type: %T", res[0][0].Value)
+	}
+
+	if v := res[0][0].Value.([]interface{}); len(v) > 0 {
+		t.Fatalf("Unexpected value: %s", v)
+	}
+}
+
+func expectMessage(t *testing.T, res []EvaluationResult, err error, expectedMessage string) {
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(res) != 1 {
+		t.Fatalf("More results than expeced: %d", len(res))
+	}
+
+	if len(res[0]) != 1 {
+		t.Fatalf("More expressions than expected: %d", len(res))
+	}
+
+	if _, ok := res[0][0].Value.([]interface{}); !ok {
+		t.Fatalf("Unexpected expression type: %T", res[0][0].Value)
+	}
+
+	if v := res[0][0].Value.([]interface{})[0].(string); v != expectedMessage {
+		t.Fatalf("Unexpected value: %s", v)
+	}
+}
+
 func TestDummyDontDeny(t *testing.T) {
 	rules := `
 	package imageadmission
@@ -26,10 +69,9 @@ func TestDummyDontDeny(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
-	if err != nil {
-		t.Fatalf("Failed: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
+	expectNoMessages(t, res, err)
+
 }
 
 func TestDummyDeny(t *testing.T) {
@@ -40,10 +82,9 @@ func TestDummyDeny(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
-	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons:\n- Image denied") {
-		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason:\n%v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", "testInput")
+
+	expectMessage(t, res, err, "Image denied")
 }
 
 func TestEvaluateData(t *testing.T) {
@@ -60,11 +101,9 @@ func TestEvaluateData(t *testing.T) {
 	{ "deny_msg" : "Deny msg from data" }
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, data, "")
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, data, "")
 
-	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons:\n- Deny msg from data") {
-		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason: %v", err)
-	}
+	expectMessage(t, res, err, "Deny msg from data")
 
 }
 
@@ -86,10 +125,8 @@ func TestEvaluateScanResultPassed(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err != nil {
-		t.Fatalf("Failed: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+	expectNoMessages(t, res, err)
 }
 
 func TestEvaluateScanResultFailed(t *testing.T) {
@@ -110,10 +147,9 @@ func TestEvaluateScanResultFailed(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err == nil || !strings.HasPrefix(err.Error(), "Image admission denied. Reasons") {
-		t.Fatalf("Failed. Missing 'Image admission denied. Reasons' reason: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+
+	expectMessage(t, res, err, "Denying images by default")
 }
 
 func TestEvaluateAdmissionReviewAllowByNamespace(t *testing.T) {
@@ -144,10 +180,9 @@ func TestEvaluateAdmissionReviewAllowByNamespace(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err != nil {
-		t.Fatalf("Failed: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+
+	expectNoMessages(t, res, err)
 }
 
 func TestEvaluateAdmissionReviewDenyByNamespace(t *testing.T) {
@@ -180,10 +215,8 @@ func TestEvaluateAdmissionReviewDenyByNamespace(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err == nil || !strings.Contains(err.Error(), "Not allowed in this namespace") {
-		t.Fatalf("Failed. Missing 'Not allowed in this namespace' reason: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+	expectMessage(t, res, err, "Not allowed in this namespace")
 }
 
 func TestEvaluateAdmissionReviewAllowByPrefix(t *testing.T) {
@@ -219,10 +252,9 @@ func TestEvaluateAdmissionReviewAllowByPrefix(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err != nil {
-		t.Errorf("Failed: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+	expectNoMessages(t, res, err)
+
 }
 
 func TestEvaluateAdmissionReviewDenyByPrefix(t *testing.T) {
@@ -259,8 +291,6 @@ func TestEvaluateAdmissionReviewDenyByPrefix(t *testing.T) {
 	}
 	`
 
-	err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
-	if err == nil || !strings.Contains(err.Error(), "Deny blacklisted registry") {
-		t.Errorf("Failed. Missing 'Deny blacklisted registry' reason: %v", err)
-	}
+	res, err := NewEvaluator().Evaluate(regoQuery, rules, "{}", input)
+	expectMessage(t, res, err, "Deny blacklisted registry")
 }

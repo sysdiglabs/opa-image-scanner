@@ -6,7 +6,6 @@ import (
 	"image-scan-webhook/pkg/imagescanner"
 	"image-scan-webhook/pkg/opa"
 	"io/ioutil"
-	"strings"
 	"testing"
 
 	"k8s.io/api/admission/v1beta1"
@@ -39,7 +38,10 @@ type mockImageScanner struct {
 
 var pod = &corev1.Pod{
 	Spec: corev1.PodSpec{Containers: []corev1.Container{
-		{Image: "mysaferegistry.io/container-image:1.01"},
+		{
+			Name:  "TestContainer",
+			Image: "mysaferegistry.io/container-image:1.01",
+		},
 	}},
 }
 
@@ -67,42 +69,27 @@ func (s *mockImageScanner) GetReport(imageAndTag, imageDigest string) (*imagesca
 var _ imagescanner.Scanner = (*mockImageScanner)(nil)
 
 type mockOPAEvaluator struct {
-	T *testing.T
-
-	ExpectedQuery string
-	ExpectedRules string
-	ExpectedData  string
-
-	ReceivedInput interface{}
-
-	ReturnError error
-	Called      bool
+	EvaluateCallback func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error)
 }
 
-func (e *mockOPAEvaluator) Evaluate(query string, rules, data string, input interface{}) error {
-	e.Called = true
+func (e *mockOPAEvaluator) Evaluate(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
 
-	if e.ExpectedQuery != "" && query != e.ExpectedQuery {
-		e.T.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+	if e.EvaluateCallback != nil {
+		return e.EvaluateCallback(query, rules, data, input)
+	} else {
+		return nil, nil
 	}
 
-	if e.ExpectedRules != "" && rules != e.ExpectedRules {
-		e.T.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
-	}
-
-	if e.ExpectedData != "" && data != e.ExpectedData {
-		e.T.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
-	}
-
-	e.ReceivedInput = input
-
-	return e.ReturnError
 }
 
 // Verify that mockEvaluator implements opa.OPAEvaluator
 var _ opa.OPAEvaluator = (*mockOPAEvaluator)(nil)
 
 func mockGetOPARules() (string, error) {
+	return "package mock\nmock_rules{}", nil
+}
+
+func mockGetOPAPreScanRules() (string, error) {
 	return "package mock\nmock_rules{}", nil
 }
 
@@ -126,14 +113,65 @@ func TestDummy(t *testing.T) {
 		StartScanReturn:     StartScanReturn{Digest: "TestDigest", Error: nil},
 		GetReportReturn:     GetReportReturn{Report: report, Error: nil}}
 
-	opaEvaluator := &mockOPAEvaluator{
-		T:             t,
-		ExpectedQuery: "data.imageadmission.deny_image",
-		ExpectedRules: mockRules,
-		ExpectedData:  mockData,
+	var opaEvaluator *mockOPAEvaluator
+	var preOpaEvaluatorCalled int = 0
+	var opaEvaluatorCalled bool
+
+	evaluatorCallback := func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		opaEvaluatorCalled = true
+
+		if query != "data.imageadmission.deny_image" {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+		}
+
+		if rules != mockRules {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
+		}
+
+		if data != mockData {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
+		}
+
+		return []opa.EvaluationResult{
+			[]opa.Expression{
+				{Text: "dummy", Value: []interface{}{}},
+			},
+		}, nil
 	}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	preScanEvaluatorCallback := func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		preOpaEvaluatorCalled++
+
+		if rules != mockRules {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected rules:\n%s", rules)
+		}
+
+		if data != mockData {
+			t.Fatalf("OPAEvaluator.Evaluate called with unexpected data:\n%s", data)
+
+		}
+		if (preOpaEvaluatorCalled) == 1 {
+			if query != "data.imageadmission.pre_allow_pod" {
+				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+			}
+			return []opa.EvaluationResult{}, nil
+		} else {
+			if query != "data.imageadmission.pre_deny_pod" {
+				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
+			}
+			opaEvaluator.EvaluateCallback = evaluatorCallback
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		}
+
+	}
+
+	opaEvaluator = &mockOPAEvaluator{preScanEvaluatorCallback}
+
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -154,7 +192,7 @@ func TestDummy(t *testing.T) {
 		t.Fatalf("GetReportCalled was not called")
 	}
 
-	if !opaEvaluator.Called {
+	if !opaEvaluatorCalled {
 		t.Fatalf("OPAEvaluator.Evaluate was not called")
 	}
 }
@@ -162,9 +200,9 @@ func TestDummy(t *testing.T) {
 func TestNilAdmissionReview(t *testing.T) {
 
 	scanner := &mockImageScanner{}
-	opaEvaluator := &mockOPAEvaluator{T: t}
+	opaEvaluator := &mockOPAEvaluator{}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 
 	accepted, _, err := evaluator.ScanAndEvaluate(nil, nil)
 	if accepted || len(err) != 1 || err[0] != "Admission request is <nil>" {
@@ -180,9 +218,9 @@ func TestEmptyAdmissionReview(t *testing.T) {
 	scanner := &mockImageScanner{
 		StartScanReturn: StartScanReturn{Digest: "", Error: fmt.Errorf("Some error - forced in test")},
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
-	opaEvaluator := &mockOPAEvaluator{T: t}
+	opaEvaluator := &mockOPAEvaluator{}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 	a := &v1beta1.AdmissionRequest{}
 
 	accepted, _, err := evaluator.ScanAndEvaluate(a, nil)
@@ -199,9 +237,32 @@ func TestStartScanFails(t *testing.T) {
 	scanner := &mockImageScanner{
 		StartScanReturn: StartScanReturn{Digest: "", Error: fmt.Errorf("Some error")},
 		GetReportReturn: GetReportReturn{Report: report, Error: nil}}
-	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	opaEvaluatorCalled := 0
+	opaEvaluator := &mockOPAEvaluator{EvaluateCallback: func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		opaEvaluatorCalled++
+		if opaEvaluatorCalled == 1 {
+			return []opa.EvaluationResult{}, nil
+		} else if opaEvaluatorCalled == 2 {
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		} else {
+			opaInput := input.(OPAInput)
+			if opaInput.ScanReport.Status != imagescanner.StatusScanFailed {
+				t.Fatalf("OPAEvaluator.Evaluate did not receive a Scan Report with ScanFailed status")
+			}
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		}
+	}}
+
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -218,13 +279,8 @@ func TestStartScanFails(t *testing.T) {
 		t.Fatalf("GetReportCalled should NOT be called")
 	}
 
-	if !opaEvaluator.Called {
+	if opaEvaluatorCalled != 3 {
 		t.Fatalf("OPAEvaluator.Evaluate was NOT called")
-	}
-
-	input := opaEvaluator.ReceivedInput.(OPAInput)
-	if input.ScanReport.Status != imagescanner.StatusScanFailed {
-		t.Fatalf("OPAEvaluator.Evaluate did not receive a Scan Report with ScanFailed status")
 	}
 }
 
@@ -234,9 +290,32 @@ func TestGetReportFails(t *testing.T) {
 		ExpectedImageDigest: "sha256:somedigest",
 		StartScanReturn:     StartScanReturn{Digest: "sha256:somedigest", Error: nil},
 		GetReportReturn:     GetReportReturn{Report: nil, Error: fmt.Errorf("Some error")}}
-	opaEvaluator := &mockOPAEvaluator{T: t}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	opaEvaluatorCalled := 0
+	opaEvaluator := &mockOPAEvaluator{EvaluateCallback: func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		opaEvaluatorCalled++
+		if opaEvaluatorCalled == 1 {
+			return []opa.EvaluationResult{}, nil
+		} else if opaEvaluatorCalled == 2 {
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		} else {
+			opaInput := input.(OPAInput)
+			if opaInput.ScanReport.Status != imagescanner.StatusReportNotAvailable {
+				t.Fatalf("OPAEvaluator.Evaluate did not receive a Scan Report with StatusReportNotAvailable status")
+			}
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		}
+	}}
+
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
@@ -257,13 +336,8 @@ func TestGetReportFails(t *testing.T) {
 		t.Fatalf("GetReportCalled was not called")
 	}
 
-	if !opaEvaluator.Called {
+	if opaEvaluatorCalled != 3 {
 		t.Fatalf("OPAEvaluator.Evaluate was NOT called")
-	}
-
-	input := opaEvaluator.ReceivedInput.(OPAInput)
-	if input.ScanReport.Status != imagescanner.StatusReportNotAvailable {
-		t.Fatalf("OPAEvaluator.Evaluate did not receive a Scan Report with StatusReportNotAvailable status")
 	}
 }
 
@@ -280,21 +354,43 @@ func TestEvaluationRejects(t *testing.T) {
 		StartScanReturn:     StartScanReturn{Digest: "TestDigest", Error: nil},
 		GetReportReturn:     GetReportReturn{Report: report, Error: nil}}
 
-	opaEvaluator := &mockOPAEvaluator{
-		T:             t,
-		ExpectedQuery: "data.imageadmission.deny_image",
-		ExpectedRules: mockRules,
-		ExpectedData:  mockData,
-		ReturnError:   fmt.Errorf("Reject this container"),
-	}
+	opaEvaluatorCalled := 0
+	opaEvaluator := &mockOPAEvaluator{EvaluateCallback: func(query string, rules, data string, input interface{}) ([]opa.EvaluationResult, error) {
+		opaEvaluatorCalled++
+		if opaEvaluatorCalled == 1 {
+			return []opa.EvaluationResult{}, nil
+		} else if opaEvaluatorCalled == 2 {
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{}},
+				},
+			}, nil
+		} else {
+			opaInput := input.(OPAInput)
+			if opaInput.ScanReport.Status != imagescanner.StatusAccepted {
+				t.Fatalf("OPAEvaluator.Evaluate did not receive a Scan Report with StatusAccepted status")
+			}
+			return []opa.EvaluationResult{
+				[]opa.Expression{
+					{Text: "dummy", Value: []interface{}{"Reject this container"}},
+				},
+			}, nil
+		}
+	}}
 
-	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAData)
+	evaluator := NewImageScannerEvaluator(scanner, opaEvaluator, mockGetOPARules, mockGetOPAPreScanRules, mockGetOPAData)
 
 	a := loadAdmissionRequest("./assets/admission-review.json", t)
 
 	accepted, _, err := evaluator.ScanAndEvaluate(a, pod)
-	if accepted || len(err) != 1 || !strings.Contains(err[0], "Reject this container") {
-		t.Errorf("Unexpected evaluation error:\n%v", err)
+	if accepted {
+		t.Errorf("Should not be accepted")
+	}
+	if len(err) != 1 {
+		t.Errorf("More errors than expected:\n%s", err)
+	}
+	if err[0] != "Image 'mysaferegistry.io/container-image:1.01' for container 'TestContainer' failed scan policy check: Reject this container" {
+		t.Errorf("Unexpected evaluation error:\n *%v*", err[0])
 	}
 
 }

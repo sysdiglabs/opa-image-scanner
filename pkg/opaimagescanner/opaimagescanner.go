@@ -21,12 +21,14 @@ func NewImageScannerEvaluator(
 	scanner imagescanner.Scanner,
 	opaEvaluator opa.OPAEvaluator,
 	getOPARulesFunc GetStringDataFunction,
+	getOPAPreScanFulesFunc GetStringDataFunction,
 	getOPADataFunc GetStringDataFunction,
 ) *opaImageScannerEvaluator {
 	return &opaImageScannerEvaluator{
-		scanner:         scanner,
-		opaEvaluator:    opaEvaluator,
-		getOPARulesFunc: getOPARulesFunc,
-		getOPADataFunc:  getOPADataFunc,
+		scanner:                scanner,
+		opaEvaluator:           opaEvaluator,
+		getOPARulesFunc:        getOPARulesFunc,
+		getOPAPreScanRulesFunc: getOPAPreScanFulesFunc,
+		getOPADataFunc:         getOPADataFunc,
 	}
 }
