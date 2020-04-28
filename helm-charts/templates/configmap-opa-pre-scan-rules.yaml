@@ -8,12 +8,15 @@ data:
   pre-scan-rules.rego: |
         package imageadmission
         # Helper variables
-        policies := data.preScanPolicies
         namespace := input.AdmissionRequest.namespace
+        policies := data.preScanPolicies
 
 {{ if .Values.preScanPolicies.autoGenerate }}
+        {{- $common := .Files.Get "commonrules.rego"}}
+        {{- if eq $common "" }}{{ fail "commonrules.rego file was not found"}}{{ end }}
         {{- $rules := .Files.Get "prescanrules.rego"}}
         {{- if eq $rules "" }}{{ fail "prescanrules.rego file was not found"}}{{ end }}
+        {{- $common | indent 8}}
         {{- $rules | indent 8}}
 {{ end }}
         ###### Begin: Custom rules ######

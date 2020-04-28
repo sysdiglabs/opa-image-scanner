@@ -1,7 +1,7 @@
-package imageadmission
+package postscanimageadmission
 
-policies_no_defaults := {
-    }
+empty_input := {}
+policies_no_defaults := {}
 
 policies_1 := {
         "defaultPolicy": "scan-result",
@@ -9,7 +9,6 @@ policies_1 := {
         "scanFailed": "reject"
     }
 
-empty_input := {}
 
 input_accepted := {
     "AdmissionRequest": {
@@ -44,9 +43,9 @@ input_rejected := {
 test_empty_config {
     deny_image["AdmissionRequest is missing in input"] with input as empty_input with data.policies as policies_no_defaults
     deny_image["ScanReport is missing in input"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanPolicies.defaultPolicy - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanPolicies.reportPending - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
-    deny_image["Invalid scanPolicies.scanFailed - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid value for defaultPolicy - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid value for reportPending - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
+    deny_image["Invalid value for scanFailed - '<empty>'"] with input as empty_input with data.policies as policies_no_defaults
 }
 
 
@@ -64,7 +63,7 @@ test_rejected_by_scan_result {
 }
 
 image_denied {
-    deny_image["Image rejected by scan-result"]
+    deny_image[_]
 }
 
 test_accepted_by_scan_result {

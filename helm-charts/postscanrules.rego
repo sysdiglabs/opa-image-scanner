@@ -1,31 +1,7 @@
-# Helper functions
+valid_policy_values = ["accept", "reject", "scan-result"]
 
-default_get(attr) = value {
-        value := policies[attr]
-}
-
-ns_get(ns, attr) = value {
-        value := default_get("byNamespace")[ns][attr]
-}
-
+##############################
 # Helper rules
-
-defined_in_namespace[[ns, attr]] {
-        default_get("byNamespace")
-        default_get("byNamespace")[ns]
-        default_get("byNamespace")[ns][attr]
-}
-
-invalid_default_policy[value] {
-        not default_get("defaultPolicy") == "accept"
-        not default_get("defaultPolicy") == "reject"
-        not default_get("defaultPolicy") == "scan-result"
-        value := default_get("defaultPolicy")
-}
-
-invalid_default_policy["<empty>"] {
-        not default_get("defaultPolicy")
-}
 
 invalid_report_pending_policy[value] {
         not default_get("reportPending") == "accept"
@@ -47,15 +23,6 @@ invalid_scan_failed_policy["<empty>"] {
         not default_get("scanFailed")
 }
 
-invalid_ns_default_policy[[ns,value]] {
-        defined_in_namespace[[ns, "defaultPolicy"]]
-        not ns_get(ns, "defaultPolicy") == "accept"
-        not ns_get(ns, "defaultPolicy") == "reject"
-        not ns_get(ns, "defaultPolicy") == "scan-result"
-        value := ns_get(ns, "defaultPolicy")
-}
-
-
 invalid_ns_report_pending_policy[[ns,value]] {
         defined_in_namespace[[ns, "reportPending"]]
         not ns_get(ns, "reportPending") == "accept"
@@ -72,48 +39,32 @@ invalid_ns_scan_failed_policy[[ns,value]] {
 
 # Configuration errors
 
-config_error["AdmissionRequest is missing in input"] {
-        not input.AdmissionRequest
-}
-
-
 config_error["ScanReport is missing in input"] {
         not input.ScanReport
 }
 
 config_error[msg] {
-        invalid_default_policy[value]
-        msg = sprintf("Invalid scanPolicies.defaultPolicy - '%s'", [value])
-}
-
-config_error[msg] {
         some value
         invalid_report_pending_policy[value]
-        msg :=  sprintf("Invalid scanPolicies.reportPending - '%s'", [value])
+        msg :=  sprintf("Invalid value for reportPending - '%s'", [value])
 }
 
 config_error[msg] {
         some value
         invalid_scan_failed_policy[value]
-        msg := sprintf("Invalid scanPolicies.scanFailed - '%s'", [value])
-}
-
-config_error[msg] {
-        some ns, value
-        invalid_ns_default_policy[[ns,value]]
-        msg := sprintf("Invalid scanPolicies.defaultPolicy for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid value for scanFailed - '%s'", [value])
 }
 
 config_error[msg] {
         some ns, value
         invalid_ns_report_pending_policy[[ns,value]]
-        msg := sprintf("Invalid scanPolicies.reportPending for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid value for reportPending for namespace '%s' - '%s'", [ns, value])
 }
 
 config_error[msg] {
         some ns, value
         invalid_ns_scan_failed_policy[[ns,value]]
-        msg := sprintf("Invalid scanPolicies.scanFailed for namespace '%s' - '%s'", [ns, value])
+        msg := sprintf("Invalid value for scanFailed for namespace '%s' - '%s'", [ns, value])
 }
 
 # Scan result helpers
@@ -136,6 +87,9 @@ scan_result_unexpected {
         not input.ScanReport.Status == "scan_failed"
         not input.ScanReport.Status == "report_not_available"
 }
+
+##############################
+# Decission policies
 
 # Default policies
 
@@ -171,7 +125,7 @@ default_deny_image["Image rejected by scan-result"] {
         scan_result_rejected
 }
 
-    default_deny_image[msg] {
+default_deny_image[msg] {
         not defined_in_namespace[[namespace, "defaultPolicy"]]
         default_check_scan_result
         scan_result_unexpected
