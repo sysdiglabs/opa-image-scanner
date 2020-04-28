@@ -66,19 +66,19 @@ input_example_multiple_images := {
 # Helper rules
 
 pod_rejected[msg] {
-    not pre_allow_pod
-    pre_deny_pod[msg] 
+    not allow_pod
+    deny_pod[msg] 
 }
 
 pod_rejected_any_message {
-    not pre_allow_pod
-    pre_deny_pod[_]
+    not allow_pod
+    deny_pod[_]
 }
 
 pod_rejected_with_message_other_than[[other_msg, msg]] {
-	pre_deny_pod[msg]
+	deny_pod[msg]
     other_msg != msg
-    pre_deny_pod[other_msg]
+    deny_pod[other_msg]
 }
 
 pod_rejected_other_msg[msg] {
@@ -93,12 +93,12 @@ pod_rejected_only_with_msg[msg] {
 }
 
 pod_accepted {
-    pre_allow_pod
+    allow_pod
     not pod_rejected_any_message
 }
 
 pod_to_be_scanned {
-    not pre_allow_pod
+    not allow_pod
     not pod_rejected_any_message
 }
 
@@ -906,5 +906,156 @@ test_ns_custom_policy_scan_multiple_containers {
         with data.policies as policy_scan_my_registries_in_ns_other
 }
 
+test_inheritance_ns_omit_default_policy {
+    pod_accepted 
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "myregistry.com/", "action": "reject"}
+                    ]
+                }
+            }
+        }
 
-#TODO: Inheritance. Use defaultPolicy and customPolicies from default if not overriden in namespace
+    pod_rejected["Pod rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ]
+                }
+            }
+        }
+
+    pod_to_be_scanned
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan"}
+                    ]
+                }
+            }
+        }
+}
+
+test_inheritance_ns_omit_custom_policies {
+    pod_accepted 
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "myregistry.com/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                }
+            }
+        }
+
+    pod_rejected_only_with_msg["Pod rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                }
+            }
+        }
+
+}
+
+test_inheritance_custom_over_defaults {
+
+    pod_accepted 
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "accept"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject"
+                }
+            }
+        }
+
+    pod_rejected["Pod rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept"
+                }
+            }
+        }
+
+    pod_to_be_scanned
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept"
+                }
+            }
+        }
+
+}
+
+test_inheritance_override_custom_in_namespace {
+
+    pod_rejected["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "accept"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": []
+                }
+            }
+        }
+
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy by prefix 'myregistry2.com/' for image 'myregistry2.com/myrepo/myimage'"]
+        with input as input_example_multiple_images
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "myregistry1.com/", "action": "reject"},
+                        {"prefix": "myregistry3.com/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        {"prefix": "myregistry2.com/", "action": "reject"}
+                    ]
+                }
+            }
+        } 
+
+}
+

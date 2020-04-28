@@ -123,7 +123,7 @@ func TestPreScanAccepted(t *testing.T) {
 
 		}
 		if (preOpaEvaluatorCalled) == 1 {
-			if query != "data.imageadmission.pre_allow_pod" {
+			if query != "data.imageadmission.allow_pod" {
 				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
 			}
 			return []opa.EvaluationResult{
@@ -186,12 +186,12 @@ func TestPreScanRejected(t *testing.T) {
 
 		}
 		if (preOpaEvaluatorCalled) == 1 {
-			if query != "data.imageadmission.pre_allow_pod" {
+			if query != "data.imageadmission.allow_pod" {
 				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
 			}
 			return []opa.EvaluationResult{}, nil
 		} else if (preOpaEvaluatorCalled) == 2 {
-			if query != "data.imageadmission.pre_deny_pod" {
+			if query != "data.imageadmission.deny_pod" {
 				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
 			}
 			return []opa.EvaluationResult{
@@ -290,12 +290,12 @@ func TestEvaluationAccepts(t *testing.T) {
 
 		}
 		if (preOpaEvaluatorCalled) == 1 {
-			if query != "data.imageadmission.pre_allow_pod" {
+			if query != "data.imageadmission.allow_pod" {
 				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
 			}
 			return []opa.EvaluationResult{}, nil
 		} else {
-			if query != "data.imageadmission.pre_deny_pod" {
+			if query != "data.imageadmission.deny_pod" {
 				t.Fatalf("OPAEvaluator.Evaluate called with unexpected query:\n%s", query)
 			}
 			opaEvaluator.EvaluateCallback = evaluatorCallback
