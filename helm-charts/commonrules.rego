@@ -13,6 +13,12 @@ ns_get(attr) = value {
         value := default_get("byNamespace")[namespace][attr]
 }
 
+policy_action_or_empty(policy) = action {
+        action := policy.action
+} else = action {
+        action := "<empty>"
+}
+
 ##############################
 # Common helper rules
 
@@ -58,3 +64,30 @@ config_error[msg] {
         msg := sprintf("Invalid value for defaultPolicy for namespace '%s' - '%s'", [namespace, value])
 }
 
+# Per-Image policy computation
+
+first_matching_custom_policy(policies, image) = [c | 
+        c := policies[_]
+        startswith(image, c.prefix)
+][0]
+
+custom_image_policy(image) = policy {
+        p := first_matching_custom_policy(data.policies.byNamespace[namespace].customPolicies, image)
+        policy := {"ns": true, "prefix": p.prefix, "action": policy_action_or_empty(p)}
+} else = policy {
+        not data.policies.byNamespace[namespace].customPolicies
+        p := first_matching_custom_policy(data.policies.customPolicies, image)
+        policy := {"ns": false, "prefix": p.prefix, "action": policy_action_or_empty(p)}
+}
+
+def_image_policy(image) = policy {
+        policy := {"ns": true, "prefix": null, "action": data.policies.byNamespace[namespace].defaultPolicy}
+} else = policy {
+        policy := {"ns": false, "prefix": null, "action": data.policies.defaultPolicy}
+}
+
+final_image_policy(image) = policy {
+        policy := custom_image_policy(image)
+} else = policy {
+        policy :=  def_image_policy(image)
+}

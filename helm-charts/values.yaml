@@ -36,13 +36,16 @@ scanPolicies:
   # What should we do if the Scan has failed (wrong credentials, misconfiguration, etc.): [accept | reject]
   scanFailed: reject
 
-  alwaysAccept: []
+  customPolicies:
+    - prefix: "my.totally-trusted-registry.com/"
+      action: accept
+    - prefix: "bad-registry.com/specific-repo/"
+      action: scan-result
+    - prefix: "bad-registry.com/"
+      action: reject
+    - prefix: "malware-registry.io/"
+      action: reject
 
-  # These 2 registries will always be rejected unless 
-  alwaysReject:
-    - "bad-registry.com/"
-    - "malware-registry.io/"
-  
   alwaysScanResult: []
 
   byNamespace: {}
@@ -53,11 +56,14 @@ scanPolicies:
   #    # All images rejected by default in this namespace
   #    defaultPolicy: reject
   #    # Images from "my-trusted-registry.com/" will be always accepted
-  #    alwasyAccept:
-  #      - "my-trusted-registry.com/"
+  #    customPolicies:
+  #      - prefix: "my-trusted-registry.com/"
+  #        action: accept
+  #      - prefix: "docker.io/"
+  #        action: scan-result
   #  ns-playground:
   #    defaultPolicy: accept
-  #    alwaysReject: []
+  #    customPolicues: []
 
 # Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
 # these customRules are appended to the set of generated rules. 
@@ -133,12 +139,12 @@ preCustomRules: |
           true
       }
 
-      allow_image {
+      allow_pod {
           # Put conditions in here
           false
       }
 
-      deny_image["This is a custom deny message"] {
+      deny_pod["This is a custom deny message"] {
           my_example_rule
           other_rule
       }

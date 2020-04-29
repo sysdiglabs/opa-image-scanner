@@ -71,14 +71,7 @@ pod_rejected[msg] {
 }
 
 pod_rejected_any_message {
-    not allow_pod
     deny_pod[_]
-}
-
-pod_rejected_with_message_other_than[[other_msg, msg]] {
-	deny_pod[msg]
-    other_msg != msg
-    deny_pod[other_msg]
 }
 
 pod_rejected_other_msg[msg] {
@@ -128,7 +121,9 @@ test_wrong_config {
 
 #Pod should be accepted if defaultPolicy=accept
 test_default_policy_accept {
-    pod_accepted with input as input_example_ns with data.policies as { "defaultPolicy": "accept"}
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as { "defaultPolicy": "accept"}
 }
 
 #Pod should be rejected if defaultPolicy=reject
@@ -144,7 +139,6 @@ test_default_policy_scan {
         with input as input_example_ns 
         with data.policies as { "defaultPolicy": "scan" }
 }
-
 
 #Pod should be accepted if customPolicy is accept for that prefix
 test_custom_policy_accept {
@@ -332,13 +326,15 @@ test_ns_wrong_config_current_namespace {
                 }
             }
         }
+}
 
+test_ns_wrong_config_other_namespace {
     pod_accepted 
         with input as input_example_ns 
         with data.policies as {
             "defaultPolicy": "accept",
             "byNamespace": {
-                "test-ns": {
+                "other": {
                     "defaultPolicy": "wrongnsvalue"
                 }
             }
