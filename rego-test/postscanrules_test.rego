@@ -186,37 +186,41 @@ test_missing_scan_report {
 # Tests: Global scope, default policy
 
 test_empty_config {
-    image_rejected["Invalid value for defaultPolicy - '<empty>'"]
-        with input as {}
+    image_rejected_only_with_msg["Invalid value for defaultPolicy - '<empty>'"]
+        with input as {
+             "AdmissionRequest": {},
+             "ScanReport": {}
+        }
         with data.policies as {}
 }
 
 test_empty_config_default_policy {
-    image_rejected["Invalid value for reportPending - '<empty>'"] 
-        with input as input_example_ns_scan_rejected
+    #If reportPending is ommited, it defaults to reject
+    image_rejected_only_with_msg["Image rejected - scan report is pending for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_pending
         with data.policies as {"defaultPolicy": "scan-result"}
 
-    image_rejected["Invalid value for scanFailed - '<empty>'"] 
-        with input as input_example_ns_scan_rejected
+    image_rejected_only_with_msg["Image rejected - scan failed for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_failed
         with data.policies as {"defaultPolicy": "scan-result"}
 }
 
 #Wrong defaultPolicy value should reject with error message
 test_wrong_config_default_policy {
-    image_rejected["Invalid value for defaultPolicy - 'wrongvalue'"] 
+    image_rejected_only_with_msg["Invalid value for defaultPolicy - 'wrongvalue'"] 
         with input as input_example_ns_scan_rejected
         with data.policies as {"defaultPolicy": "wrongvalue"}
 }
 
 test_wrong_config_report_pending {
-    image_rejected["Invalid value for reportPending - 'wrongvalue'"] 
-        with input as input_example_ns_scan_rejected
+    image_rejected_only_with_msg["Invalid value for reportPending - 'wrongvalue'"] 
+        with input as input_example_ns_scan_accepted
         with data.policies as {"defaultPolicy": "scan-result", "reportPending": "wrongvalue"}
 }
 
 test_wrong_config_scan_failed {
-    image_rejected["Invalid value for scanFailed - 'wrongvalue'"] 
-        with input as input_example_ns_scan_rejected
+    image_rejected_only_with_msg["Invalid value for scanFailed - 'wrongvalue'"] 
+        with input as input_example_ns_scan_accepted
         with data.policies as {"defaultPolicy": "scan-result", "scanFailed": "wrongvalue"}
 }
 
@@ -353,7 +357,7 @@ test_scan_failed_reject {
 # Tests: Global scope, custom policies
 
 test_custom_empty_action {
-    image_rejected["Invalid value for customPolicy with prefix 'docker.io/' - '<empty>'"]
+    image_rejected_only_with_msg["Invalid value for customPolicy with prefix 'docker.io/' - '<empty>'"]
         with input as input_example_ns_scan_accepted
         with data.policies as {
             "defaultPolicy": "accept",
@@ -365,7 +369,7 @@ test_custom_empty_action {
 
 #Wrong customPolicy action should reject with error message
 test_custom_wrong_action {
-    image_rejected["Invalid value for customPolicy with prefix 'docker.io/' - 'wrongvalue'"] 
+    image_rejected_only_with_msg["Invalid value for customPolicy with prefix 'docker.io/' - 'wrongvalue'"] 
         with input as input_example_ns_scan_accepted
         with data.policies as {
             "defaultPolicy": "accept",
@@ -377,6 +381,15 @@ test_custom_wrong_action {
 
 #Pod should be accepted if customPolicy=accept
 test_custom_policy_accept {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                {"prefix": "---docker.io/", "action": "accept"}
+            ]
+        }
+
     image_accepted 
         with input as input_example_ns_scan_rejected
         with data.policies as {
@@ -388,7 +401,16 @@ test_custom_policy_accept {
 }
 
 #Pod should be rejected if customPolicy=reject
-test_default_policy_reject {
+test_custom_policy_reject {
+    image_accepted
+        with input as input_example_ns_scan_rejected 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "---docker.io/", "action": "reject"}
+            ]
+        }
+
     image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns_scan_rejected 
         with data.policies as {
@@ -401,6 +423,18 @@ test_default_policy_reject {
 
 #When customPolicy is scan-result, image should be accepted if the scan result is "accepted"
 test_custom_policy_scan_result_accepted {
+
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "reject",
+            "customPolicies": [
+                {"prefix": "---docker.io/", "action": "scan-result"}
+            ]
+        }
+
     image_accepted 
         with input as input_example_ns_scan_accepted
         with data.policies as {
@@ -414,21 +448,18 @@ test_custom_policy_scan_result_accepted {
 }
 
 #When customPolicy is scan-result, image should be rejected if the scan result is "rejected"
-test_custom_policy_scan_result_accepted {
-    image_rejected_only_with_msg["Image rejected by scan result by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns_scan_rejected
+test_custom_policy_scan_result_rejected {
+    image_accepted
+        with input as input_example_ns_scan_rejected 
         with data.policies as {
-            "defaultPolicy": "reject",
-            "reportPending": "reject",
-            "scanFailed": "reject",
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "scanFailed": "accept",
             "customPolicies": [
-                {"prefix": "docker.io/", "action": "scan-result"}
+                {"prefix": "---docker.io/", "action": "scan-result"}
             ]
         }
-}
 
-#When customPolicy is scan-result, image should be rejected if the scan result is "rejected"
-test_custom_policy_scan_result_rejected {
     image_rejected_only_with_msg["Image rejected by scan result by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns_scan_rejected 
         with data.policies as {
@@ -479,12 +510,11 @@ test_report_pending_accept_by_custom_policy {
         }
 }
 
-# Check that if scan-result is an action for a custom policy, then reportPending must be defined
 test_missing_report_pending_custom_policy_scan_result {
-    image_rejected["Invalid value for reportPending - '<empty>'"]
-        with input as input_example_ns_scan_accepted
+    image_rejected_only_with_msg["Image rejected - scan report is pending by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
         with data.policies as {
-            "defaultPolicy": "accept",
+            "defaultPolicy": "reject",
             "customPolicies": [
                 {"prefix": "docker.io/", "action": "scan-result"}
             ]
@@ -493,7 +523,7 @@ test_missing_report_pending_custom_policy_scan_result {
 
 # Check that if scan-result is an action for a custom policy, then reportPending must be defined
 test_wrong_report_pending_custom_policy_scan_result {
-    image_rejected["Invalid value for reportPending - 'wrong'"]
+    image_rejected_only_with_msg["Invalid value for reportPending - 'wrong'"]
         with input as input_example_ns_scan_accepted
         with data.policies as {
             "defaultPolicy": "accept",
@@ -532,10 +562,9 @@ test_custom_report_pending_reject {
         }
 }
 
-# Check that if scan-result is an action for a custom policy, then reportPending must be defined
 test_missing_scan_failed_custom_policy_scan_result {
-    image_rejected["Invalid value for scanFailed - '<empty>'"]
-        with input as input_example_ns_scan_accepted
+    image_rejected_only_with_msg["Image rejected - scan failed by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
         with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
@@ -546,7 +575,7 @@ test_missing_scan_failed_custom_policy_scan_result {
 
 # Check that if scan-result is an action for a custom policy, then reportPending must be defined
 test_wrong_scan_failed_custom_policy_scan_result {
-    image_rejected["Invalid value for scanFailed - 'wrong'"]
+    image_rejected_only_with_msg["Invalid value for scanFailed - 'wrong'"]
         with input as input_example_ns_scan_accepted
         with data.policies as {
             "defaultPolicy": "accept",
@@ -643,8 +672,8 @@ test_ns_wrong_config_other_namespace {
 }
 
 test_ns_wrong_config_report_pending {
-   image_rejected["Invalid value for reportPending for namespace 'example' - 'wrongnsvalue'"]
-        with input as input_example_ns_scan_rejected 
+   image_rejected_only_with_msg["Invalid value for reportPending for namespace 'example' - 'wrongnsvalue'"]
+        with input as input_example_ns_scan_accepted 
         with data.policies as {
             "defaultPolicy": "accept",
             "byNamespace": {
@@ -656,8 +685,8 @@ test_ns_wrong_config_report_pending {
 }
 
 test_ns_wrong_config_scan_failed {
-   image_rejected["Invalid value for scanFailed for namespace 'example' - 'wrongnsvalue'"]
-        with input as input_example_ns_scan_rejected 
+   image_rejected_only_with_msg["Invalid value for scanFailed for namespace 'example' - 'wrongnsvalue'"]
+        with input as input_example_ns_scan_accepted 
         with data.policies as {
             "defaultPolicy": "accept",
             "byNamespace": {
@@ -670,8 +699,8 @@ test_ns_wrong_config_scan_failed {
 
 
 test_ns_empty_config_report_pending {
-   image_rejected["Invalid value for reportPending for namespace 'example' - '<empty>'"]
-        with input as input_example_ns_scan_rejected 
+   image_rejected_only_with_msg["Image rejected by namespace 'example' - scan report is pending for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending 
         with data.policies as {
             "defaultPolicy": "accept",
             "byNamespace": {
@@ -683,8 +712,8 @@ test_ns_empty_config_report_pending {
 }
 
 test_ns_empty_config_scan_failed {
-   image_rejected["Invalid value for scanFailed for namespace 'example' - '<empty>'"]
-        with input as input_example_ns_scan_rejected 
+   image_rejected_only_with_msg["Image rejected by namespace 'example' - scan failed for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed 
         with data.policies as {
             "defaultPolicy": "accept",
             "byNamespace": {
@@ -1111,3 +1140,935 @@ test_ns_scan_failed_reject {
 
 ##############################################################
 # Tests: Namespace scope, custom policies
+
+test_ns_custom_empty_action_current_namespace {
+    image_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'docker.io/' - '<empty>'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_empty_action_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/" }
+                    ]
+                }
+            }
+        }
+}
+
+#Wrong customPolicy action should reject with error message
+test_ns_custom_wrong_action_current_namespace {
+    image_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'docker.io/' - 'wrongvalue'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "wrongvalue" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_wrong_action_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "wrongvalue" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_no_report_pending_if_action_is_scan_result {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - scan report is pending by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_accept_current_namespace {
+
+    image_accepted 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_accept_other_namespace {
+
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_reject_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_reject_other_namespace {
+
+    image_accepted
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_result_accepted_current_namespace {
+    image_accepted
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_result_accepted_other_namespace {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_result_rejected_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' by prefix 'docker.io/' by scan result for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_result_rejected_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_scan_result_unexpected_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - Unexpected ScanReport status value 'wrongreport' by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_wrongreport
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_wrongreport
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_result_unexpected_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_wrongreport
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_report_pending_reject_by_custom_policy_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_report_pending_reject_by_custom_policy_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_report_pending_accept_by_custom_policy_current_namespace {
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_report_pending_accept_by_custom_policy_other_namespace {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_report_pending_reject_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - scan report is pending by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "reportPending": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "reportPending": "reject",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_report_pending_reject_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "accept",
+                    "reportPending": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_report_pending_accept_current_namespace {
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "reportPending": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "reportPending": "accept",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_report_pending_accept_other_namespace {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "reportPending": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_failed_reject_by_custom_policy_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_failed_reject_by_custom_policy_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "reject" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_scan_failed_accept_by_custom_policy_current_namespace {
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_failed_accept_by_custom_policy_other_namespace {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "accept" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_scan_failed_reject_current_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - scan failed by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "scanFailed": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "scanFailed": "reject",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_failed_reject_other_namespace {
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "accept",
+                    "scanFailed": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+
+test_ns_custom_policy_scan_failed_accept_current_namespace {
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "scanFailed": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "scanFailed": "accept",
+                    "customPolicies": [
+                        { "prefix": "---docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_scan_failed_accept_other_namespace {
+    image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "reportPending": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+}
+
+# Tests: Inheritance
+
+
+test_report_pending_inherited {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - scan report is pending by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+}
+
+test_scan_failed_inherited {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' - scan failed by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_failed
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "scanFailed": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        { "prefix": "docker.io/", "action": "scan-result" }
+                    ]
+                }
+            }
+        }
+
+}
+
+
+########
+
+
+test_inheritance_ns_omit_default_policy {
+    image_accepted 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "---docker.io/", "action": "reject"}
+                    ]
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ]
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "example": {
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan-result"}
+                    ]
+                }
+            }
+        }
+}
+
+test_inheritance_ns_omit_custom_policies {
+    image_accepted 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "---docker.io/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                }
+            }
+        }
+
+}
+
+test_inheritance_custom_over_defaults {
+    image_accepted 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "accept"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject"
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept"
+                }
+            }
+        }
+
+    image_accepted
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan-result"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject"
+                }
+            }
+        }
+
+}
+
+test_inheritance_override_custom_in_namespace {
+    image_rejected_only_with_msg["Image rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "docker.io/", "action": "accept"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": []
+                }
+            }
+        }
+
+    image_rejected_only_with_msg["Image rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                        {"prefix": "myregistry1.com/", "action": "reject"},
+                        {"prefix": "myregistry3.com/", "action": "reject"}
+                    ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ]
+                }
+            }
+        } 
+}

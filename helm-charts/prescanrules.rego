@@ -54,13 +54,13 @@ deny_pod[msg] {
 
 deny_pod[msg] {
         image_action_reject[[false, null, image]]
-        msg := sprintf("Pod rejected by default policy for image '%s'", [image])
+        msg := sprintf("Pod rejected by global default policy for image '%s'", [image])
 }
 
 deny_pod[msg] {
         prefix != null
         image_action_reject[[false, prefix, image]]
-        msg := sprintf("Pod rejected by custom policy by prefix '%s' for image '%s'", [prefix, image])
+        msg := sprintf("Pod rejected by global custom policy (prefix '%s') for image '%s'", [prefix, image])
 }
 
 deny_pod[msg] {
@@ -71,6 +71,6 @@ deny_pod[msg] {
 deny_pod[msg] {
         prefix != null
         image_action_reject[[true, prefix, image]]
-        msg := sprintf("Pod rejected by namespace '%s' custom policy by prefix '%s' for image '%s'", [namespace, prefix, image])
+        msg := sprintf("Pod rejected by namespace '%s' custom policy (prefix '%s') for image '%s'", [namespace, prefix, image])
 }
 

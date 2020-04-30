@@ -21,24 +21,6 @@ input_example_ns := {
     }
 }
 
-input_example_single_image := {
-    "AdmissionRequest": {
-        "namespace": "example",
-        "object": {
-            "metadata": {
-                "namespace": "example"
-            },
-            "spec": {
-                "containers": [
-                    {
-                    "image": "myregistry.com/myrepo/myimage"
-                    }
-                ]
-            }
-        }
-    }
-}
-
 input_example_multiple_images := {
     "AdmissionRequest": {
         "namespace": "example",
@@ -130,7 +112,7 @@ test_default_policy_accept {
 
 #Pod should be rejected if defaultPolicy=reject
 test_default_policy_reject {
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns 
         with data.policies as { "defaultPolicy": "reject"}
 }
@@ -147,20 +129,23 @@ test_default_policy_scan {
 
 #Pod should be accepted if customPolicy is accept for that prefix
 test_custom_policy_accept {
-    policy_accept_my_registry := {
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "reject",
             "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
+                {"prefix": "---docker.io/", "action": "accept"}
             ]
         }
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns 
-        with data.policies as policy_accept_my_registry
-
     pod_accepted 
-        with input as input_example_single_image 
-        with data.policies as policy_accept_my_registry
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "accept"}
+            ]
+        }
 }
 
 #Pod should be accepted if customPolicy is accept for all the containers
@@ -174,7 +159,7 @@ test_custom_policy_accept_multiple_containers {
             ]
         }
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
         with data.policies as policy_accept_my_registries
 
@@ -185,20 +170,23 @@ test_custom_policy_accept_multiple_containers {
 
 #Pod should be rejected if customPolicy is reject for that prefix
 test_custom_policy_reject {
-    policy_reject_my_registry := {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "reject"}
+                {"prefix": "---docker.io/", "action": "reject"}
             ]
         }
 
-    pod_accepted 
+    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
-        with data.policies as policy_reject_my_registry
-
-    pod_rejected_only_with_msg["Pod rejected by custom policy by prefix 'myregistry.com/' for image 'myregistry.com/myrepo/myimage'"] 
-        with input as input_example_single_image 
-        with data.policies as policy_reject_my_registry
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "reject"}
+            ]
+        }
 }
 
 #Pod should be rejected if customPolicy is reject for that prefix for one of the containers
@@ -214,13 +202,13 @@ test_custom_policy_reject_multiple_containers_default_accept {
         with input as input_example_ns 
         with data.policies as policy_reject_my_registry
 
-    pod_rejected_only_with_msg["Pod rejected by custom policy by prefix 'myregistry2.com/' for image 'myregistry2.com/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"] 
         with input as input_example_multiple_images 
         with data.policies as policy_reject_my_registry
 }
 
 
-#Pod should be rejected if any of the containers is rejected by default policy
+#Pod should be rejected if any of the containers is rejected by global default policy
 test_custom_policy_reject_multiple_containers_default_reject {
     policy_accept_my_registry := {
             "defaultPolicy": "reject",
@@ -229,15 +217,15 @@ test_custom_policy_reject_multiple_containers_default_reject {
             ]
         }
 
-    pod_rejected["Pod rejected by default policy for image 'myregistry1.com/myrepo/myimage'"] 
+    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
    
-    not pod_rejected["Pod rejected by default policy for image 'myregistry2.com/myrepo/myimage'"] 
+    not pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
     
-    pod_rejected["Pod rejected by default policy for image 'myregistry3.com/myrepo/myimage'"] 
+    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
 }
@@ -247,53 +235,70 @@ test_custom_policy_reject_empty_config {
     policy_missing_action_my_registry := {
             "defaultPolicy": "accept",
             "customPolicies": [
-                {"prefix": "myregistry.com/"}
+                {"prefix": "docker.io/"}
             ]
         }
 
     pod_accepted 
         with input as input_example_ns 
-        with data.policies as policy_missing_action_my_registry
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "---docker.io/"}
+            ]
+        }
 
-    pod_rejected_only_with_msg["Invalid value for customPolicy with prefix 'myregistry.com/' - '<empty>'"] 
-        with input as input_example_single_image 
-        with data.policies as policy_missing_action_my_registry
+    pod_rejected_only_with_msg["Invalid value for customPolicy with prefix 'docker.io/' - '<empty>'"] 
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/"}
+            ]
+        }
 }
 
 #Pod should be rejected if wrong policy is detected for that prefix
 test_custom_policy_reject_wrong_config {
-    policy_wrong_action_my_registry := {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "wrong"}
+                {"prefix": "---docker.io/", "action": "wrong"}
             ]
         }
 
-    pod_accepted 
+    pod_rejected_only_with_msg["Invalid value for customPolicy with prefix 'docker.io/' - 'wrong'"] 
         with input as input_example_ns 
-        with data.policies as policy_wrong_action_my_registry
-
-    pod_rejected_only_with_msg["Invalid value for customPolicy with prefix 'myregistry.com/' - 'wrong'"] 
-        with input as input_example_single_image 
-        with data.policies as policy_wrong_action_my_registry
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "wrong"}
+            ]
+        }
 }
 
 #Pod should be scanned if customPolicy is scan
 test_custom_policy_scan {
-    policy_scan_my_registry := {
-            "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "scan"}
-            ]
-        }
 
     pod_accepted 
         with input as input_example_ns 
-        with data.policies as policy_scan_my_registry
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "---docker.io/", "action": "scan"}
+            ]
+        }
 
     pod_to_be_scanned 
-        with input as input_example_single_image 
-        with data.policies as policy_scan_my_registry
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan"}
+            ]
+        }
 }
 
 #Pod should be scan if customPolicy is scan for at least the prefix of one of the containers, an no containers are rejected
@@ -307,7 +312,7 @@ test_custom_policy_scan_multiple_containers {
             ]
         }
     
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
         with data.policies as policy_scan_my_registries
         
@@ -370,7 +375,7 @@ test_ns_default_policy_accept {
         with input as input_example_ns 
         with data.policies as policy_accept_in_ns_example
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
         with data.policies as policy_accept_in_ns_other
 }
@@ -429,7 +434,7 @@ test_ns_default_policy_scan {
         with input as input_example_ns 
         with data.policies as policy_scan_in_ns_example
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
         with data.policies as policy_scan_in_ns_other
 }
@@ -438,8 +443,11 @@ test_ns_default_policy_scan {
 # Tests: Namespace scope, custom policies
 
 #Pod should be accepted if customPolicy is accept for that prefix in that namespace
-test_ns_custom_policy_accept {
-    policy_accept_in_ns_example_my_registry := {
+test_ns_custom_policy_accept_current_namespace {
+ 
+    pod_accepted 
+        with input as input_example_ns
+        with data.policies as {
             "defaultPolicy": "reject",
             "customPolicies": [
                 {"prefix": "someregistry.com/", "action": "accept"}
@@ -448,13 +456,34 @@ test_ns_custom_policy_accept {
                 "example": {
                     "defaultPolicy": "reject",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "accept"}
+                        {"prefix": "docker.io/", "action": "accept"}
                     ],
                 }
             }
         }
 
-    policy_accept_in_ns_other_my_registry := {
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                {"prefix": "someregistry.com/", "action": "accept"}
+            ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        {"prefix": "---docker.io/", "action": "accept"}
+                    ],
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_accept_other_namespace {
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "reject",
             "customPolicies": [
                 {"prefix": "someregistry.com/", "action": "accept"}
@@ -463,32 +492,16 @@ test_ns_custom_policy_accept {
                 "other": {
                     "defaultPolicy": "reject",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "accept"}
+                        {"prefix": "docker.io/", "action": "accept"}
                     ],
                 }
             }
         }
-
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns 
-        with data.policies as policy_accept_in_ns_example_my_registry
-
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns 
-        with data.policies as policy_accept_in_ns_other_my_registry
-
-    pod_accepted 
-        with input as input_example_single_image
-        with data.policies as policy_accept_in_ns_example_my_registry
-
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'myregistry.com/myrepo/myimage'"]  
-        with input as input_example_single_image
-        with data.policies as policy_accept_in_ns_other_my_registry
 }
 
 #Pod should be accepted if customPolicy is accept for all the containers in that namespace
-test_ns_custom_policy_accept_multiple_containers {
-    policy_accept_in_ns_example_my_registries := {
+test_ns_custom_policy_accept_multiple_containers_current_namespace {
+    policy := {
             "defaultPolicy": "reject",
             "customPolicies": [
                 {"prefix": "someregistry.com/", "action": "accept"}
@@ -505,7 +518,18 @@ test_ns_custom_policy_accept_multiple_containers {
             }
         }
 
-    policy_accept_in_ns_other_my_registries := {
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns 
+        with data.policies as policy
+
+    pod_accepted 
+        with input as input_example_multiple_images 
+        with data.policies as policy
+}
+
+test_ns_custom_policy_accept_multiple_containers_other_namespace {
+
+    policy := {
             "defaultPolicy": "reject",
             "customPolicies": [
                 {"prefix": "someregistry.com/", "action": "accept"}
@@ -522,47 +546,67 @@ test_ns_custom_policy_accept_multiple_containers {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns 
-        with data.policies as policy_accept_in_ns_example_my_registries
+        with data.policies as policy
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns 
-        with data.policies as policy_accept_in_ns_other_my_registries
+    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"]
+        with input as input_example_multiple_images 
+        with data.policies as policy
 
-    pod_accepted 
+    pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"]
         with input as input_example_multiple_images 
-        with data.policies as policy_accept_in_ns_example_my_registries
+        with data.policies as policy
 
-    pod_rejected["Pod rejected by default policy for image 'myregistry1.com/myrepo/myimage'"]
+    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"]
         with input as input_example_multiple_images 
-        with data.policies as policy_accept_in_ns_other_my_registries
-    pod_rejected["Pod rejected by default policy for image 'myregistry2.com/myrepo/myimage'"]
-        with input as input_example_multiple_images 
-        with data.policies as policy_accept_in_ns_other_my_registries
-    pod_rejected["Pod rejected by default policy for image 'myregistry3.com/myrepo/myimage'"]
-        with input as input_example_multiple_images 
-        with data.policies as policy_accept_in_ns_other_my_registries
+        with data.policies as policy
 }
 
 #Pod should be rejected if customPolicy is reject for that prefix
-test_ns_custom_policy_reject {
-    policy_reject_in_ns_example_my_registries := {
+test_ns_custom_policy_reject_current_namespace {
+
+
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns
+        with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
-                {"prefix": "someregistry.com/", "action": "accept"}
+                {"prefix": "docker.io/", "action": "reject"}
             ],
             "byNamespace": {
                 "example": {
                     "defaultPolicy": "reject",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "reject"}
+                        {"prefix": "---docker.io/", "action": "reject"}
                     ]
                 }
             }
         }
 
-    policy_reject_in_ns_other_my_registries := {
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "reject"}
+            ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "reject"}
+                    ]
+                }
+            }
+        }
+
+}
+
+test_ns_custom_policy_reject_other_namespace {
+    pod_accepted 
+        with input as input_example_ns
+        with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
                 {"prefix": "someregistry.com/", "action": "accept"}
@@ -571,27 +615,12 @@ test_ns_custom_policy_reject {
                 "other": {
                     "defaultPolicy": "reject",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "reject"}
+                        {"prefix": "docker.io/", "action": "reject"}
                     ]
                 }
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns
-        with data.policies as policy_reject_in_ns_example_my_registries
-
-    pod_accepted 
-        with input as input_example_ns
-        with data.policies as policy_reject_in_ns_other_my_registries
-
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy by prefix 'myregistry.com/' for image 'myregistry.com/myrepo/myimage'"]
-        with input as input_example_single_image
-        with data.policies as policy_reject_in_ns_example_my_registries
-
-    pod_accepted
-        with input as input_example_single_image
-        with data.policies as policy_reject_in_ns_other_my_registries
 }
 
 #Pod should be rejected if customPolicy is reject for that prefix for one of the containers
@@ -634,7 +663,7 @@ test_ns_custom_policy_reject_multiple_containers_default_accept {
         with input as input_example_ns
         with data.policies as policy_reject_in_ns_other_my_registries
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy by prefix 'myregistry2.com/' for image 'myregistry2.com/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"] 
         with input as input_example_multiple_images 
         with data.policies as policy_reject_in_ns_example_my_registries
 
@@ -644,7 +673,7 @@ test_ns_custom_policy_reject_multiple_containers_default_accept {
 }
 
 
-#Pod should be rejected if any of the containers is rejected by default policy
+#Pod should be rejected if any of the containers is rejected by global default policy
 test_ns_custom_policy_reject_multiple_containers_default_reject {
     policy_accept_in_ns_example_my_registries := {
             "defaultPolicy": "accept",
@@ -700,182 +729,162 @@ test_ns_custom_policy_reject_multiple_containers_default_reject {
 }
 
 #Pod should be rejected if no policy is specified for that prefix
-test_ns_custom_policy_reject_empty_config {
-    policy_missing_action_my_registry_in_ns_example := {
+test_ns_custom_policy_reject_empty_config_current_namespace {
+
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
-            ],
             "byNamespace": {
                 "example": {
                     "defaultPolicy": "accept",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/"}
+                        {"prefix": "---docker.io/"}
                     ]
                 }
             }
         }
 
-    policy_missing_action_my_registry_in_ns_other := {
+    pod_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'docker.io/' - '<empty>'"]
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        {"prefix": "docker.io/"}
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_reject_empty_config_other_namespace {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
+                {"prefix": "docker.io/", "action": "accept"}
             ],
             "byNamespace": {
                 "other": {
                     "defaultPolicy": "accept",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/"}
+                        {"prefix": "docker.io/"}
                     ]
                 }
             }
         }
-
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_missing_action_my_registry_in_ns_example
-
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_missing_action_my_registry_in_ns_other
-
-    pod_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'myregistry.com/' - '<empty>'"]
-        with input as input_example_single_image 
-        with data.policies as policy_missing_action_my_registry_in_ns_example
-
-    pod_accepted
-        with input as input_example_single_image 
-        with data.policies as policy_missing_action_my_registry_in_ns_other
-
 }
 
 #Pod should be rejected if wrong policy is detected for that prefix
-test_ns_custom_policy_reject_wrong_config {
-    policy_wrong_action_my_registry_in_ns_example := {
+test_ns_custom_policy_reject_wrong_config_current_namespace {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
-            ],
             "byNamespace": {
                 "example": {
                     "defaultPolicy": "accept",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "wrong"}
+                        {"prefix": "---docker.io/", "action": "wrong"}
                     ]
                 }
             }
         }
 
-    policy_wrong_action_my_registry_in_ns_other := {
+    pod_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'docker.io/' - 'wrong'"] 
+        with input as input_example_ns 
+        with data.policies as {
             "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
-            ],
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "wrong"}
+                    ]
+                }
+            }
+        }
+}
+
+test_ns_custom_policy_reject_wrong_config_other_namespace {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "accept",
             "byNamespace": {
                 "other": {
                     "defaultPolicy": "accept",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "wrong"}
+                        {"prefix": "docker.io/", "action": "wrong"}
                     ]
                 }
             }
         }
 
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_wrong_action_my_registry_in_ns_example
-
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_wrong_action_my_registry_in_ns_other
-
-    pod_rejected_only_with_msg["Invalid value for namespace 'example' customPolicy with prefix 'myregistry.com/' - 'wrong'"] 
-        with input as input_example_single_image 
-        with data.policies as policy_wrong_action_my_registry_in_ns_example
-
-    pod_accepted
-        with input as input_example_single_image 
-        with data.policies as policy_wrong_action_my_registry_in_ns_other
 }
-
 
 #Pod should be scanned if customPolicy is scan
-test_ns_custom_policy_scan {
-   policy_scan_my_registry_in_ns_example := {
-            "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
-            ],
+test_ns_custom_policy_scan_current_namespace {
+
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "reject",
             "byNamespace": {
                 "example": {
                     "defaultPolicy": "accept",
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "scan"}
+                        {"prefix": "---docker.io/", "action": "scan"}
                     ]
                 }
             }
         }
-
-   policy_scan_my_registry_in_ns_other := {
-            "defaultPolicy": "accept",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "accept"}
-            ],
-            "byNamespace": {
-                "other": {
-                    "defaultPolicy": "accept",
-                    "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "scan"}
-                    ]
-                }
-            }
-        }
-
-
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_scan_my_registry_in_ns_example
-
-    pod_accepted 
-        with input as input_example_ns 
-        with data.policies as policy_scan_my_registry_in_ns_other
 
     pod_to_be_scanned 
-        with input as input_example_single_image 
-        with data.policies as policy_scan_my_registry_in_ns_example
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "example": {
+                    "defaultPolicy": "accept",
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan"}
+                    ]
+                }
+            }
+        }
 
-    pod_accepted 
-        with input as input_example_single_image 
-        with data.policies as policy_scan_my_registry_in_ns_other
 }
 
+test_ns_custom_policy_scan_other_namespace {
+    pod_accepted 
+        with input as input_example_ns 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        {"prefix": "docker.io/", "action": "scan"}
+                    ]
+                }
+            }
+        }
+}
 
 #Pod should be scan if customPolicy is scan for at least the prefix of one of the containers, an no containers are rejected
-test_ns_custom_policy_scan_multiple_containers {
+test_ns_custom_policy_scan_multiple_containers_current_namespace {
     policy_scan_my_registries_in_ns_example := {
             "defaultPolicy": "reject",
             "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "reject"},
+                {"prefix": "docker.io/", "action": "reject"},
             ],
             "byNamespace": {
                 "example": {
-                    "defaultPolicy": "reject",
-                    "customPolicies": [
-                        {"prefix": "myregistry1.com/", "action": "scan"},
-                        {"prefix": "myregistry2.com/", "action": "accept"},
-                        {"prefix": "myregistry3.com/", "action": "accept"}
-                    ]
-                }
-            }
-        }
-
-    policy_scan_my_registries_in_ns_other := {
-            "defaultPolicy": "reject",
-            "customPolicies": [
-                {"prefix": "myregistry.com/", "action": "reject"}
-            ],
-            "byNamespace": {
-                "other": {
                     "defaultPolicy": "reject",
                     "customPolicies": [
                         {"prefix": "myregistry1.com/", "action": "scan"},
@@ -890,23 +899,39 @@ test_ns_custom_policy_scan_multiple_containers {
         with input as input_example_ns
         with data.policies as policy_scan_my_registries_in_ns_example
 
-    pod_rejected_only_with_msg["Pod rejected by default policy for image 'docker.io/myrepo/myimage'"] 
-        with input as input_example_ns
-        with data.policies as policy_scan_my_registries_in_ns_other
-
     pod_to_be_scanned
         with input as input_example_multiple_images
         with data.policies as policy_scan_my_registries_in_ns_example
+}
 
-    pod_rejected["Pod rejected by default policy for image 'myregistry1.com/myrepo/myimage'"] 
+test_ns_custom_policy_scan_multiple_containers_other_namespace {
+    policy := {
+            "defaultPolicy": "reject",
+            "byNamespace": {
+                "other": {
+                    "defaultPolicy": "reject",
+                    "customPolicies": [
+                        {"prefix": "myregistry1.com/", "action": "scan"},
+                        {"prefix": "myregistry2.com/", "action": "accept"},
+                        {"prefix": "myregistry3.com/", "action": "accept"}
+                    ]
+                }
+            }
+        }
+
+    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns
+        with data.policies as policy
+
+    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"] 
         with input as input_example_multiple_images
-        with data.policies as policy_scan_my_registries_in_ns_other
-    pod_rejected["Pod rejected by default policy for image 'myregistry2.com/myrepo/myimage'"] 
+        with data.policies as policy
+    pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"] 
         with input as input_example_multiple_images
-        with data.policies as policy_scan_my_registries_in_ns_other
-    pod_rejected["Pod rejected by default policy for image 'myregistry3.com/myrepo/myimage'"] 
+        with data.policies as policy
+    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"] 
         with input as input_example_multiple_images
-        with data.policies as policy_scan_my_registries_in_ns_other
+        with data.policies as policy
 }
 
 ##############################################################
@@ -920,13 +945,13 @@ test_inheritance_ns_omit_default_policy {
             "byNamespace": {
                 "example": {
                     "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "reject"}
+                        {"prefix": "---docker.io/", "action": "reject"}
                     ]
                 }
             }
         }
 
-    pod_rejected["Pod rejected by namespace 'example' custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -959,7 +984,7 @@ test_inheritance_ns_omit_custom_policies {
         with data.policies as {
             "defaultPolicy": "accept",
             "customPolicies": [
-                        {"prefix": "myregistry.com/", "action": "reject"}
+                        {"prefix": "---docker.io/", "action": "reject"}
                     ],
             "byNamespace": {
                 "example": {
@@ -967,7 +992,7 @@ test_inheritance_ns_omit_custom_policies {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -997,7 +1022,7 @@ test_inheritance_custom_over_defaults {
             }
         }
 
-    pod_rejected["Pod rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "reject",
@@ -1028,7 +1053,7 @@ test_inheritance_custom_over_defaults {
 }
 
 test_inheritance_override_custom_in_namespace {
-    pod_rejected["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -1043,7 +1068,7 @@ test_inheritance_override_custom_in_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy by prefix 'myregistry2.com/' for image 'myregistry2.com/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"]
         with input as input_example_multiple_images
         with data.policies as {
             "defaultPolicy": "accept",

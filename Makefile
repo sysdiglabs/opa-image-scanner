@@ -25,7 +25,7 @@ prepare-tests:
 	cat helm-charts/postscanrules.rego >> rego-test/_generated_postscanrules.rego
 
 test-rego: prepare-tests
-	docker run --rm -v $$(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
+	docker run --rm -v $$(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests
 
 cert: cert.crt secret-tls.yaml
 

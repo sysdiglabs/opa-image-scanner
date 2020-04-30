@@ -5,12 +5,12 @@
 ##############################
 # Common helper functions
 
-default_get(attr) = value {
+global_get(attr) = value {
         value := policies[attr]
 }
 
 ns_get(attr) = value {
-        value := default_get("byNamespace")[namespace][attr]
+        value := global_get("byNamespace")[namespace][attr]
 }
 
 policy_action_or_empty(policy) = action {
@@ -23,9 +23,9 @@ policy_action_or_empty(policy) = action {
 # Common helper rules
 
 defined_in_namespace[attr] {
-        default_get("byNamespace")
-        default_get("byNamespace")[namespace]
-        default_get("byNamespace")[namespace][attr]
+        global_get("byNamespace")
+        global_get("byNamespace")[namespace]
+        global_get("byNamespace")[namespace][attr]
 }
 
 valid_policy_value[value] {
@@ -33,12 +33,12 @@ valid_policy_value[value] {
 }
 
 invalid_default_policy[value] {
-        value := default_get("defaultPolicy")
+        value := global_get("defaultPolicy")
         not valid_policy_value[value]
 }
 
 invalid_default_policy["<empty>"] {
-        not default_get("defaultPolicy")
+        not global_get("defaultPolicy")
 }
 
 invalid_ns_default_policy[value] {
