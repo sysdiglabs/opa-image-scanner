@@ -112,7 +112,7 @@ test_default_policy_accept {
 
 #Pod should be rejected if defaultPolicy=reject
 test_default_policy_reject {
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"]
         with input as input_example_ns 
         with data.policies as { "defaultPolicy": "reject"}
 }
@@ -129,7 +129,7 @@ test_default_policy_scan {
 
 #Pod should be accepted if customPolicy is accept for that prefix
 test_custom_policy_accept {
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as {
             "defaultPolicy": "reject",
@@ -159,7 +159,7 @@ test_custom_policy_accept_multiple_containers {
             ]
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as policy_accept_my_registries
 
@@ -179,7 +179,7 @@ test_custom_policy_reject {
             ]
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global custom policy (prefix 'docker.io/')"] 
         with input as input_example_ns 
         with data.policies as {
             "defaultPolicy": "accept",
@@ -202,7 +202,7 @@ test_custom_policy_reject_multiple_containers_default_accept {
         with input as input_example_ns 
         with data.policies as policy_reject_my_registry
 
-    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'myregistry2.com/myrepo/myimage' REJECTED. Global custom policy (prefix 'myregistry2.com/')"] 
         with input as input_example_multiple_images 
         with data.policies as policy_reject_my_registry
 }
@@ -217,15 +217,15 @@ test_custom_policy_reject_multiple_containers_default_reject {
             ]
         }
 
-    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry1.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
    
-    not pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"] 
+    not pod_rejected["Image 'myregistry2.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
     
-    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry3.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_my_registry
 }
@@ -312,7 +312,7 @@ test_custom_policy_scan_multiple_containers {
             ]
         }
     
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as policy_scan_my_registries
         
@@ -375,7 +375,7 @@ test_ns_default_policy_accept {
         with input as input_example_ns 
         with data.policies as policy_accept_in_ns_example
 
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as policy_accept_in_ns_other
 }
@@ -400,7 +400,7 @@ test_ns_default_policy_reject {
         }
     }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns 
         with data.policies as policy_reject_in_ns_example
 
@@ -434,7 +434,7 @@ test_ns_default_policy_scan {
         with input as input_example_ns 
         with data.policies as policy_scan_in_ns_example
 
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as policy_scan_in_ns_other
 }
@@ -462,7 +462,7 @@ test_ns_custom_policy_accept_current_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns 
         with data.policies as {
             "defaultPolicy": "reject",
@@ -481,7 +481,7 @@ test_ns_custom_policy_accept_current_namespace {
 }
 
 test_ns_custom_policy_accept_other_namespace {
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as {
             "defaultPolicy": "reject",
@@ -518,7 +518,7 @@ test_ns_custom_policy_accept_multiple_containers_current_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns 
         with data.policies as policy
 
@@ -546,19 +546,19 @@ test_ns_custom_policy_accept_multiple_containers_other_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns 
         with data.policies as policy
 
-    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"]
+    pod_rejected["Image 'myregistry1.com/myrepo/myimage' REJECTED. Global default policy"]
         with input as input_example_multiple_images 
         with data.policies as policy
 
-    pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"]
+    pod_rejected["Image 'myregistry2.com/myrepo/myimage' REJECTED. Global default policy"]
         with input as input_example_multiple_images 
         with data.policies as policy
 
-    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"]
+    pod_rejected["Image 'myregistry3.com/myrepo/myimage' REJECTED. Global default policy"]
         with input as input_example_multiple_images 
         with data.policies as policy
 }
@@ -567,7 +567,7 @@ test_ns_custom_policy_accept_multiple_containers_other_namespace {
 test_ns_custom_policy_reject_current_namespace {
 
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -584,7 +584,7 @@ test_ns_custom_policy_reject_current_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' custom policy (prefix 'docker.io/')"]
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -663,7 +663,7 @@ test_ns_custom_policy_reject_multiple_containers_default_accept {
         with input as input_example_ns
         with data.policies as policy_reject_in_ns_other_my_registries
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'myregistry2.com/myrepo/myimage' REJECTED. Namespace 'example' custom policy (prefix 'myregistry2.com/')"] 
         with input as input_example_multiple_images 
         with data.policies as policy_reject_in_ns_example_my_registries
 
@@ -705,7 +705,7 @@ test_ns_custom_policy_reject_multiple_containers_default_reject {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns
         with data.policies as policy_accept_in_ns_example_my_registries
 
@@ -713,13 +713,13 @@ test_ns_custom_policy_reject_multiple_containers_default_reject {
         with input as input_example_ns
         with data.policies as policy_accept_in_ns_other_my_registries
 
-    pod_rejected["Pod rejected by namespace 'example' default policy for image 'myregistry1.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry1.com/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_in_ns_example_my_registries
-    not pod_rejected["Pod rejected by namespace 'example' default policy for image 'myregistry2.com/myrepo/myimage'"] 
+    not pod_rejected["Image 'myregistry2.com/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_multiple_images 
         with data.policies as policy_accept_in_ns_example_my_registries
-    pod_rejected["Pod rejected by namespace 'example' default policy for image 'myregistry3.com/myrepo/myimage'"]
+    pod_rejected["Image 'myregistry3.com/myrepo/myimage' REJECTED. Namespace 'example' default policy"]
         with input as input_example_multiple_images
         with data.policies as policy_accept_in_ns_example_my_registries
 
@@ -895,7 +895,7 @@ test_ns_custom_policy_scan_multiple_containers_current_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"] 
         with input as input_example_ns
         with data.policies as policy_scan_my_registries_in_ns_example
 
@@ -919,17 +919,17 @@ test_ns_custom_policy_scan_multiple_containers_other_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global default policy for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_ns
         with data.policies as policy
 
-    pod_rejected["Pod rejected by global default policy for image 'myregistry1.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry1.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images
         with data.policies as policy
-    pod_rejected["Pod rejected by global default policy for image 'myregistry2.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry2.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images
         with data.policies as policy
-    pod_rejected["Pod rejected by global default policy for image 'myregistry3.com/myrepo/myimage'"] 
+    pod_rejected["Image 'myregistry3.com/myrepo/myimage' REJECTED. Global default policy"] 
         with input as input_example_multiple_images
         with data.policies as policy
 }
@@ -951,7 +951,7 @@ test_inheritance_ns_omit_default_policy {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' custom policy (prefix 'docker.io/')"]
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -992,7 +992,7 @@ test_inheritance_ns_omit_custom_policies {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global custom policy (prefix 'docker.io/')"] 
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -1022,7 +1022,7 @@ test_inheritance_custom_over_defaults {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by global custom policy (prefix 'docker.io/') for image 'docker.io/myrepo/myimage'"] 
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Global custom policy (prefix 'docker.io/')"] 
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "reject",
@@ -1053,7 +1053,7 @@ test_inheritance_custom_over_defaults {
 }
 
 test_inheritance_override_custom_in_namespace {
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Image 'docker.io/myrepo/myimage' REJECTED. Namespace 'example' default policy"]
         with input as input_example_ns
         with data.policies as {
             "defaultPolicy": "accept",
@@ -1068,7 +1068,7 @@ test_inheritance_override_custom_in_namespace {
             }
         }
 
-    pod_rejected_only_with_msg["Pod rejected by namespace 'example' custom policy (prefix 'myregistry2.com/') for image 'myregistry2.com/myrepo/myimage'"]
+    pod_rejected_only_with_msg["Image 'myregistry2.com/myrepo/myimage' REJECTED. Namespace 'example' custom policy (prefix 'myregistry2.com/')"]
         with input as input_example_multiple_images
         with data.policies as {
             "defaultPolicy": "accept",
