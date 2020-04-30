@@ -14,8 +14,22 @@ invalid_scan_failed_policy[value] {
         value := default_get("scanFailed")
 }
 
+invalid_scan_failed_policy[value] {
+        imagePolicy.action == "scan-result"
+        not imagePolicy.ns
+        not default_get("scanFailed") == "accept"
+        not default_get("scanFailed") == "reject"
+        value := default_get("scanFailed")
+}
+
 invalid_scan_failed_policy["<empty>"] {
         default_get("defaultPolicy") == "scan-result"
+        not default_get("scanFailed")
+}
+
+invalid_scan_failed_policy["<empty>"] {
+        imagePolicy.action == "scan-result"
+        not imagePolicy.ns
         not default_get("scanFailed")
 }
 
@@ -26,10 +40,25 @@ invalid_report_pending_policy[value] {
         value := default_get("reportPending")
 }
 
+invalid_report_pending_policy[value] {
+        imagePolicy.action == "scan-result"
+        not imagePolicy.ns
+        not default_get("reportPending") == "accept"
+        not default_get("reportPending") == "reject"
+        value := default_get("reportPending")
+}
+
 invalid_report_pending_policy["<empty>"] {
         default_get("defaultPolicy") == "scan-result"
         not default_get("reportPending")
 }
+
+invalid_report_pending_policy["<empty>"] {
+        imagePolicy.action == "scan-result"
+        not imagePolicy.ns
+        not default_get("reportPending")
+}
+
 
 invalid_ns_report_pending_policy[value] {
         defined_in_namespace["reportPending"]
@@ -81,6 +110,22 @@ config_error[msg] {
         some value
         invalid_ns_scan_failed_policy[value]
         msg := sprintf("Invalid value for scanFailed for namespace '%s' - '%s'", [namespace, value])
+}
+
+config_error[msg] {
+        policy := imagePolicy
+        not policy.ns
+        not policy.prefix == null
+        not valid_policy_value[policy.action]
+        msg := sprintf("Invalid value for customPolicy with prefix '%s' - '%s'", [policy.prefix, policy.action])
+}
+
+config_error[msg] {
+        policy := imagePolicy
+        policy.ns
+        not policy.prefix == null
+        not valid_policy_value[policy.action]
+        msg := sprintf("Invalid value for namespace '%s' customPolicy with prefix '%s' - '%s'", [namespace, policy.prefix, policy.action])
 }
 
 # Scan result helpers
@@ -159,57 +204,123 @@ image_action_reject[[ns, prefix]] {
 }
 
 deny_image[msg] {
-        image_action_scan_result[[false,_]]
+        image_action_scan_result[[false,null]]
         scan_result_unexpected[value]
         msg := sprintf("Image rejected - Unexpected ScanReport status value '%s' for image '%s'", [value, image])
 }
 
 
 deny_image[msg] {
-        image_action_scan_result[[true,_]]
+        image_action_scan_result[[true,null]]
         scan_result_unexpected[value]
         msg := sprintf("Image rejected by namespace '%s' - Unexpected ScanReport status value '%s' for image '%s'", [namespace, value, image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[false,_]]
+        image_action_scan_result[[false,null]]
         scan_result_not_available
         default_get("reportPending") == "reject"
         msg := sprintf("Image rejected - scan report is pending for image '%s'", [image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[true,_]]
+        image_action_scan_result[[true,null]]
         scan_result_not_available
         ns_get("reportPending") == "reject"
         msg := sprintf("Image rejected by namespace '%s' - scan report is pending for image '%s'", [namespace, image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[false,_]]
+        image_action_scan_result[[false,null]]
         scan_result_failed
         default_get("scanFailed") == "reject"
         msg := sprintf("Image rejected - scan failed for image '%s'", [image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[true,_]]
+        image_action_scan_result[[true,null]]
         scan_result_failed
         ns_get("scanFailed") == "reject"
         msg := sprintf("Image rejected by namespace '%s' - scan failed for image '%s'", [namespace, image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[false,_]]
+        image_action_scan_result[[false,null]]
         scan_result_rejected
         msg := sprintf("Image rejected by scan result for image '%s'", [image])
 }
 
 deny_image[msg] {
-        image_action_scan_result[[true,_]]
+        image_action_scan_result[[true,null]]
         scan_result_rejected
         msg := sprintf("Image rejected by namespace '%s' by scan result for image '%s'", [namespace, image])
 }
+
+########
+
+
+deny_image[msg] {
+        image_action_scan_result[[false,prefix]]
+        prefix != null
+        scan_result_unexpected[value]
+        msg := sprintf("Image rejected - Unexpected ScanReport status value '%s' by prefix '%s' for image '%s'", [value, prefix, image])
+}
+
+
+deny_image[msg] {
+        image_action_scan_result[[true,prefix]]
+        prefix != null
+        scan_result_unexpected[value]
+        msg := sprintf("Image rejected by namespace '%s' - Unexpected ScanReport status value '%s' by prefix '%s' for image '%s'", [namespace, value, prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[false,prefix]]
+        prefix != null
+        scan_result_not_available
+        default_get("reportPending") == "reject"
+        msg := sprintf("Image rejected - scan report is pending by prefix '%s' for image '%s'", [prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[true,prefix]]
+        prefix != null
+        scan_result_not_available
+        ns_get("reportPending") == "reject"
+        msg := sprintf("Image rejected by namespace '%s' - scan report is pending by prefix '%s' for image '%s'", [namespace, prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[false,prefix]]
+        prefix != null
+        scan_result_failed
+        default_get("scanFailed") == "reject"
+        msg := sprintf("Image rejected - scan failed by prefix '%s' for image '%s'", [prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[true,prefix]]
+        prefix != null
+        scan_result_failed
+        ns_get("scanFailed") == "reject"
+        msg := sprintf("Image rejected by namespace '%s' - scan failed by prefix '%s' for image '%s'", [namespace, prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[false,prefix]]
+        prefix != null
+        scan_result_rejected
+        msg := sprintf("Image rejected by scan result by prefix '%s' for image '%s'", [prefix, image])
+}
+
+deny_image[msg] {
+        image_action_scan_result[[true,prefix]]
+        prefix != null
+        scan_result_rejected
+        msg := sprintf("Image rejected by namespace '%s' by prefix '%s' by scan result for image '%s'", [namespace, prefix, image])
+}
+
+########
 
 deny_image[msg] {
         image_action_reject[[false, null]]

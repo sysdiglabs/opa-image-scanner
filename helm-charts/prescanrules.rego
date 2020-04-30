@@ -36,25 +36,20 @@ image_action_reject[[ns, prefix, image]] {
 
 any_image_action_scan {
         final_image_policies[{"ns": _, "prefix": _, "image": _, "action": "scan"}]
-} 
-
-any_image_action_accept {
-        final_image_policies[{"ns": _, "prefix": _, "image": _, "action": "accept"}]
 }
 
-any_image_action_reject {
-        image_action_reject[[_,_,_]]
+no_denied_pod {
+        deny_reasons := { reason | deny_pod[reason] }
+        count(deny_reasons) == 0
 }
 
 allow_pod {
-        any_image_action_accept
         not any_image_action_scan
-        not any_image_action_reject
-        not some_deny_pod
+        no_denied_pod
 }
 
-some_deny_pod {
-        deny_pod[_]
+deny_pod[msg] {
+        config_error[msg]
 }
 
 deny_pod[msg] {
@@ -79,6 +74,3 @@ deny_pod[msg] {
         msg := sprintf("Pod rejected by namespace '%s' custom policy by prefix '%s' for image '%s'", [namespace, prefix, image])
 }
 
-deny_pod[msg] {
-        config_error[msg]
-}

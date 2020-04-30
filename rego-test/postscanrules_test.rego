@@ -1,5 +1,8 @@
 package postscanimageadmission
 
+##############################################################
+# Input examples
+
 input_example_ns_scan_rejected := {
     "AdmissionRequest": {
         "namespace": "example",
@@ -111,7 +114,7 @@ input_example_ns_scan_failed := {
     }
 }
 
-###############################
+##############################################################
 # Helper rules
 
 image_accepted {
@@ -138,8 +141,8 @@ image_rejected_only_with_msg[msg] {
 }
 
 
-###############################
-# Tests
+##############################################################
+# Tests: input validation
 
 #Empty configuration (no default policy) should reject with an error message
 test_empty_input {
@@ -152,7 +155,6 @@ test_empty_input {
         with input as {}
         with data.policies as {}
 }
-
 
 #Empty admission request should reject with an error message
 test_missing_admission_request {
@@ -179,6 +181,9 @@ test_missing_scan_report {
             "scanFailed": "reject"
         }
 }
+
+##############################################################
+# Tests: Global scope, default policy
 
 test_empty_config {
     image_rejected["Invalid value for defaultPolicy - '<empty>'"]
@@ -244,7 +249,7 @@ test_default_policy_scan_result_accepted {
 
 #When policy is scan-result, image should be rejected if the scan result is "rejected"
 test_default_policy_scan_result_rejected {
-    image_rejected_only_with_msg[_] 
+    image_rejected_only_with_msg["Image rejected by scan result for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns_scan_rejected 
         with data.policies as { 
             "defaultPolicy": "scan-result",
@@ -252,7 +257,6 @@ test_default_policy_scan_result_rejected {
             "scanFailed": "accept"
         }
 }
-
 
 #When policy is scan-result, image should be rejected if the scan result is an unexpected value
 test_default_policy_scan_result_unexpected {
@@ -305,8 +309,6 @@ test_report_pending_reject {
         }
 }
 
-
-
 #When scan has failed, and scanFailed policy is accept, image should be accepted
 test_scan_failed_accept_by_default_policy {
     image_accepted 
@@ -316,8 +318,7 @@ test_scan_failed_accept_by_default_policy {
         }
 }
 
-
-#When scan has failed, and scanFailed policy is reject, image should be rejected
+#When scan has failed, and defaultPolicy is reject, image should be rejected
 test_scan_failed_reject_by_default_policy {
     image_rejected_only_with_msg["Image rejected by default policy for image 'docker.io/myrepo/myimage'"] 
         with input as input_example_ns_scan_failed
@@ -325,7 +326,6 @@ test_scan_failed_reject_by_default_policy {
             "defaultPolicy": "reject"
         }
 }
-
 
 #When scan has failed, and scanFailed policy is accept, image should be accepted
 test_scan_failed_accept {
@@ -338,7 +338,6 @@ test_scan_failed_accept {
         }
 }
 
-
 #When scan has failed, and scanFailed policy is reject, image should be rejected
 test_scan_failed_reject {
     image_rejected_only_with_msg["Image rejected - scan failed for image 'docker.io/myrepo/myimage'"]  
@@ -349,6 +348,272 @@ test_scan_failed_reject {
             "scanFailed": "reject"
         }
 }
+
+##############################################################
+# Tests: Global scope, custom policies
+
+test_custom_empty_action {
+    image_rejected["Invalid value for customPolicy with prefix 'docker.io/' - '<empty>'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/"}
+            ]
+        }
+}
+
+#Wrong customPolicy action should reject with error message
+test_custom_wrong_action {
+    image_rejected["Invalid value for customPolicy with prefix 'docker.io/' - 'wrongvalue'"] 
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "wrongvalue"}
+            ]
+        }
+}
+
+#Pod should be accepted if customPolicy=accept
+test_custom_policy_accept {
+    image_accepted 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "accept"}
+            ]
+        }
+}
+
+#Pod should be rejected if customPolicy=reject
+test_default_policy_reject {
+    image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_rejected 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "reject"}
+            ]
+        }
+}
+
+#When customPolicy is scan-result, image should be accepted if the scan result is "accepted"
+test_custom_policy_scan_result_accepted {
+    image_accepted 
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When customPolicy is scan-result, image should be rejected if the scan result is "rejected"
+test_custom_policy_scan_result_accepted {
+    image_rejected_only_with_msg["Image rejected by scan result by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_rejected
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When customPolicy is scan-result, image should be rejected if the scan result is "rejected"
+test_custom_policy_scan_result_rejected {
+    image_rejected_only_with_msg["Image rejected by scan result by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]
+        with input as input_example_ns_scan_rejected 
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "scanFailed": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When customPolicy is scan-result, image should be rejected if the scan result is an unexpected value
+test_custom_policy_scan_result_unexpected {
+    image_rejected_only_with_msg["Image rejected - Unexpected ScanReport status value 'wrongreport' by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]  
+        with input as input_example_ns_scan_wrongreport
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "scanFailed": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When report is pending image should be rejected because customPolicy is reject (makes no sense to wait for scan result)
+test_report_pending_reject_by_custom_policy {
+    image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "reject"}
+            ]
+        }
+}
+
+#When report is pending image should be accepted because customPolicy is accept (makes no sense to wait for scan result)
+test_report_pending_accept_by_custom_policy {
+    image_accepted
+        with input as input_example_ns_scan_pending
+        with data.policies as {
+            "defaultPolicy": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "accept"}
+            ]
+        }
+}
+
+# Check that if scan-result is an action for a custom policy, then reportPending must be defined
+test_missing_report_pending_custom_policy_scan_result {
+    image_rejected["Invalid value for reportPending - '<empty>'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+# Check that if scan-result is an action for a custom policy, then reportPending must be defined
+test_wrong_report_pending_custom_policy_scan_result {
+    image_rejected["Invalid value for reportPending - 'wrong'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "reportPending": "wrong",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When report is pending, and reportPending policy is accept, image should be accepted
+test_custom_report_pending_accept {
+    image_accepted 
+        with input as input_example_ns_scan_pending
+        with data.policies as { 
+            "defaultPolicy": "reject",
+            "reportPending": "accept",
+            "scanFailed": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When scan has failed, and scanFailed policy is reject, image should be rejected
+test_custom_report_pending_reject {
+    image_rejected_only_with_msg["Image rejected - scan report is pending by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_pending
+        with data.policies as { 
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+# Check that if scan-result is an action for a custom policy, then reportPending must be defined
+test_missing_scan_failed_custom_policy_scan_result {
+    image_rejected["Invalid value for scanFailed - '<empty>'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+# Check that if scan-result is an action for a custom policy, then reportPending must be defined
+test_wrong_scan_failed_custom_policy_scan_result {
+    image_rejected["Invalid value for scanFailed - 'wrong'"]
+        with input as input_example_ns_scan_accepted
+        with data.policies as {
+            "defaultPolicy": "accept",
+            "scanFailed": "wrong",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When scan has failed, and scanFailed policy is accept, image should be accepted
+test_scan_failed_accept_by_custom_policy {
+    image_accepted 
+        with input as input_example_ns_scan_failed
+        with data.policies as { 
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When scan has failed, and scanFailed policy is reject, image should be rejected
+test_scan_failed_reject_by_custom_policy {
+    image_rejected_only_with_msg["Image rejected by custom policy by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"] 
+        with input as input_example_ns_scan_failed
+        with data.policies as { 
+            "defaultPolicy": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "reject"}
+            ]
+        }
+}
+
+
+#When scan has failed, and scanFailed policy is accept, image should be accepted
+test_custom_scan_failed_accept {
+    image_accepted 
+        with input as input_example_ns_scan_failed
+        with data.policies as { 
+            "defaultPolicy": "reject",
+            "reportPending": "reject",
+            "scanFailed": "accept",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+#When scan has failed, and scanFailed policy is reject, image should be rejected
+test_custom_scan_failed_reject {
+    image_rejected_only_with_msg["Image rejected - scan failed by prefix 'docker.io/' for image 'docker.io/myrepo/myimage'"]  
+        with input as input_example_ns_scan_failed
+        with data.policies as { 
+            "defaultPolicy": "accept",
+            "reportPending": "accept",
+            "scanFailed": "reject",
+            "customPolicies": [
+                {"prefix": "docker.io/", "action": "scan-result"}
+            ]
+        }
+}
+
+##############################################################
+# Tests: Namespace scope, default policy
 
 #Wrong defaultPolicy in current namespace should reject admission
 test_ns_wrong_config_current_namespace {
@@ -843,3 +1108,6 @@ test_ns_scan_failed_reject {
         with input as input_example_ns_scan_failed
         with data.policies as policy_ns_other
 }
+
+##############################################################
+# Tests: Namespace scope, custom policies

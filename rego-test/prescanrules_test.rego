@@ -1,5 +1,8 @@
 package prescanimageadmission
 
+##############################################################
+# Imput examples
+
 input_example_ns := {
     "AdmissionRequest": {
         "namespace": "example",
@@ -17,7 +20,6 @@ input_example_ns := {
         }
     }
 }
-
 
 input_example_single_image := {
     "AdmissionRequest": {
@@ -62,7 +64,7 @@ input_example_multiple_images := {
 }
 
 
-###############################
+##############################################################
 # Helper rules
 
 pod_rejected[msg] {
@@ -95,8 +97,8 @@ pod_to_be_scanned {
     not pod_rejected_any_message
 }
 
-###############################
-# Tests
+##############################################################
+# Tests: Gelobal scope, default policy
 
 #Empty admission request should reject with an error message
 test_empty_admission_request {
@@ -139,6 +141,9 @@ test_default_policy_scan {
         with input as input_example_ns 
         with data.policies as { "defaultPolicy": "scan" }
 }
+
+##############################################################
+# Tests: Global scope, custom policies
 
 #Pod should be accepted if customPolicy is accept for that prefix
 test_custom_policy_accept {
@@ -273,7 +278,6 @@ test_custom_policy_reject_wrong_config {
         with data.policies as policy_wrong_action_my_registry
 }
 
-
 #Pod should be scanned if customPolicy is scan
 test_custom_policy_scan {
     policy_scan_my_registry := {
@@ -291,8 +295,6 @@ test_custom_policy_scan {
         with input as input_example_single_image 
         with data.policies as policy_scan_my_registry
 }
-
-
 
 #Pod should be scan if customPolicy is scan for at least the prefix of one of the containers, an no containers are rejected
 test_custom_policy_scan_multiple_containers {
@@ -313,6 +315,9 @@ test_custom_policy_scan_multiple_containers {
         with input as input_example_multiple_images 
         with data.policies as policy_scan_my_registries
 }
+
+##############################################################
+# Tests: Namespace scope, default policy
 
 #Wrong defaultPolicy in current namespace should reject admission
 test_ns_wrong_config_current_namespace {
@@ -429,6 +434,8 @@ test_ns_default_policy_scan {
         with data.policies as policy_scan_in_ns_other
 }
 
+##############################################################
+# Tests: Namespace scope, custom policies
 
 #Pod should be accepted if customPolicy is accept for that prefix in that namespace
 test_ns_custom_policy_accept {
@@ -902,6 +909,9 @@ test_ns_custom_policy_scan_multiple_containers {
         with data.policies as policy_scan_my_registries_in_ns_other
 }
 
+##############################################################
+# Tests: Policy inherintance
+
 test_inheritance_ns_omit_default_policy {
     pod_accepted 
         with input as input_example_ns
@@ -973,7 +983,6 @@ test_inheritance_ns_omit_custom_policies {
 }
 
 test_inheritance_custom_over_defaults {
-
     pod_accepted 
         with input as input_example_ns
         with data.policies as {
@@ -1019,7 +1028,6 @@ test_inheritance_custom_over_defaults {
 }
 
 test_inheritance_override_custom_in_namespace {
-
     pod_rejected["Pod rejected by namespace 'example' default policy for image 'docker.io/myrepo/myimage'"]
         with input as input_example_ns
         with data.policies as {
@@ -1052,6 +1060,4 @@ test_inheritance_override_custom_in_namespace {
                 }
             }
         } 
-
 }
-
