@@ -71,18 +71,18 @@ first_matching_custom_policy(policies, image) = [c |
 ][0]
 
 custom_image_policy(image) = policy {
-        p := first_matching_custom_policy(data.policies.byNamespace[namespace].customPolicies, image)
+        p := first_matching_custom_policy(policies.byNamespace[namespace].customPolicies, image)
         policy := {"ns": true, "prefix": p.prefix, "action": policy_action_or_empty(p)}
 } else = policy {
-        not data.policies.byNamespace[namespace].customPolicies
-        p := first_matching_custom_policy(data.policies.customPolicies, image)
+        not policies.byNamespace[namespace].customPolicies
+        p := first_matching_custom_policy(policies.customPolicies, image)
         policy := {"ns": false, "prefix": p.prefix, "action": policy_action_or_empty(p)}
 }
 
 default_image_policy(image) = policy {
-        policy := {"ns": true, "prefix": null, "action": data.policies.byNamespace[namespace].defaultPolicy}
+        policy := {"ns": true, "prefix": null, "action": policies.byNamespace[namespace].defaultPolicy}
 } else = policy {
-        policy := {"ns": false, "prefix": null, "action": data.policies.defaultPolicy}
+        policy := {"ns": false, "prefix": null, "action": policies.defaultPolicy}
 }
 
 final_image_policy(image) = policy {

@@ -46,7 +46,6 @@ scanPolicies:
     - prefix: "malware-registry.io/"
       action: reject
 
-  alwaysScanResult: []
 
   byNamespace: {}
   #  ns-dev:
@@ -63,7 +62,7 @@ scanPolicies:
   #        action: scan-result
   #  ns-playground:
   #    defaultPolicy: accept
-  #    customPolicues: []
+  #    customPolicies: []
 
 # Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
 # these customRules are appended to the set of generated rules. 

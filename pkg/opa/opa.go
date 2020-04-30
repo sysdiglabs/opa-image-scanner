@@ -19,7 +19,7 @@ func (o *opaEvaluator) Evaluate(query, rules, data string, input interface{}) ([
 		return nil, fmt.Errorf("Rego evaluation error: %v", err)
 	}
 
-	return evaluateResults(rs)
+	return evaluateResults(rs), nil
 }
 
 func evaluateRules(query, rules, data string, input interface{}) (rego.ResultSet, error) {
@@ -77,49 +77,21 @@ func compileRules(rules string) (*ast.Compiler, error) {
 	})
 }
 
-func evaluateResults(rs rego.ResultSet) ([]EvaluationResult, error) {
+func evaluateResults(rs rego.ResultSet) []EvaluationResult {
 
 	er := make([]EvaluationResult, len(rs))
+	klog.V(3).Infof("[rego] len(ResultSet) = %d", len(rs))
 
 	for i := range rs {
+		klog.V(3).Infof("[rego] len(rs[%d].Expressions) = %d", i, len(rs[i].Expressions))
 		er[i] = make([]Expression, len(rs[i].Expressions))
 		for j := range rs[i].Expressions {
+			klog.V(3).Infof("[rego]   rs[%d].Expression[%d]: %s=%v", i, j, rs[i].Expressions[j].Text, rs[i].Expressions[j].Value)
 			er[i][j].Text = rs[i].Expressions[j].Text
 			er[i][j].Value = rs[i].Expressions[j].Value
 		}
 	}
 
-	return er, nil
+	return er
 
-	// klog.V(3).Infof("[rego] ResultSet %s", rs)
-
-	// // Inspect results.
-	// klog.V(3).Infof("[rego] Evaluating ResultSet - len: %d", len(rs))
-
-	// if len(rs) != 1 {
-	// 	return fmt.Errorf("Rego - unexpected ResultSet length: %d", len(rs))
-	// }
-
-	// klog.V(3).Infof("[rego] Evaluating ResultSet - Expressions length: %d", len(rs[0].Expressions))
-
-	// if len(rs[0].Expressions) != 1 {
-	// 	return fmt.Errorf("Rego - unexpected Expressions length: %d", len(rs[0].Expressions))
-	// }
-
-	// klog.V(3).Infof("[rego] Evaluating ResultSet - Expressions[0].Value:\n%#v", rs[0].Expressions[0].Value)
-
-	// // TODO: Some tests and how to check if it is returning an empty list (OK) or not
-	// if reflect.ValueOf(rs[0].Expressions[0].Value).Kind() == reflect.Slice {
-	// 	if reflect.ValueOf(rs[0].Expressions[0].Value).Len() > 0 {
-	// 		values := rs[0].Expressions[0].Value.([]interface{})
-	// 		var msgBuilder strings.Builder
-	// 		for _, value := range values {
-	// 			msgBuilder.WriteString(fmt.Sprintf("- %s\n", value))
-	// 		}
-	// 		msgList := msgBuilder.String()
-	// 		return fmt.Errorf("Image admission denied. Reasons:\n%s", msgList)
-	// 	}
-	// }
-
-	// return nil
 }
