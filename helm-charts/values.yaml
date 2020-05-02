@@ -36,18 +36,19 @@ scanPolicies:
   # What should we do if the Scan has failed (wrong credentials, misconfiguration, etc.): [accept | reject]
   scanFailed: reject
 
-  customPolicies:
-    - prefix: "my.totally-trusted-registry.com/"
-      action: accept
-    - prefix: "bad-registry.com/specific-repo/"
-      action: scan-result
-    - prefix: "bad-registry.com/"
-      action: reject
-    - prefix: "malware-registry.io/"
-      action: reject
+  # customPolicies:
+  #   - prefix: "my.totally-trusted-registry.com/"
+  #     action: accept
+  #   - prefix: "bad-registry.com/specific-repo/"
+  #     action: scan-result
+  #   - prefix: "bad-registry.com/"
+  #     action: reject
+  #   - prefix: "malware-registry.io/"
+  #     action: reject
 
 
   byNamespace: {}
+  # byNamespace:
   #  ns-dev:
   #    # By default, images will be accepted in this NS regardless of the scan result
   #    defaultPolicy: accept
@@ -89,39 +90,27 @@ preScanPolicies:
 
   defaultPolicy: scan
 
-  customPolicies:
-    - prefix: "my.totally-trusted-registry.com/"
-      action: accept
-    - prefix: "bad-registry.com/specific-repo/"
-      action: scan
-    - prefix: "bad-registry.com/"
-      action: reject
-    - prefix: "malware-registry.io/"
-      action: reject
+  # customPolicies:
+  #   - prefix: "my.totally-trusted-registry.com/"
+  #     action: accept
+  #   - prefix: "bad-registry.com/specific-repo/"
+  #     action: scan
+  #   - prefix: "bad-registry.com/"
+  #     action: reject
+  #   - prefix: "malware-registry.io/"
+  #     action: reject
   
-  byNamespace: 
+  byNamespace: {}
+  # byNamespace:
+  #   ns-prod:
+  #     defaultPolicy: reject
+  #     customPolicies:
+  #       - prefix: "my-trusted-registry.com/"
+  #         action: accept
 
-    customer1:
-      defaultPolicy: reject
-      customPolicies:
-        - prefix: "customer1.private-registry.com/"
-          action: accept
-
-    customer2:
-      defaultPolicy: reject
-      customPolicies:
-        - prefix: "customer2.private-registry.com/"
-          action: accept
-
-    ns-prod:
-      defaultPolicy: reject
-      customPolicies:
-        - prefix: "my-trusted-registry.com/"
-          action: accept
-
-    ns-playground:
-      defaultPolicy: accept
-      customPolicies: []
+  #   ns-playground:
+  #     defaultPolicy: accept
+  #     customPolicies: []
 
 
 # Define a set of custom rego rules. If preScanPolicies.autoGenerate is true, 

@@ -1,4 +1,3 @@
-
 ##############################
 # Post-Scan rules
 ##############################
@@ -89,7 +88,7 @@ scan_result_not_available {
 }
 
 scan_result_unexpected[value] {
-        value = input.ScanReport.Status 
+        value = input.ScanReport.Status
         not value == "accepted"
         not value == "rejected"
         not value == "scan_failed"
@@ -104,7 +103,7 @@ imagePolicy := final_image_policy(image)
 
 image_action_scan_result[[ns, prefix]] {
         imagePolicy = {"ns": ns, "prefix": prefix, "action": "scan-result"}
-} 
+}
 
 image_action_reject[[ns, prefix]] {
         imagePolicy = {"ns": ns, "prefix": prefix, "action": "reject"}

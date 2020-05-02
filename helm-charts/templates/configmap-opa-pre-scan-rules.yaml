@@ -6,19 +6,18 @@ metadata:
     {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
 data:
   pre-scan-rules.rego: |
-        package imageadmission
-        # Helper variables
-        namespace := input.AdmissionRequest.namespace
-        policies := data.preScanPolicies
-
-{{ if .Values.preScanPolicies.autoGenerate }}
-        {{- $common := .Files.Get "commonrules.rego"}}
-        {{- if eq $common "" }}{{ fail "commonrules.rego file was not found"}}{{ end }}
-        {{- $rules := .Files.Get "prescanrules.rego"}}
-        {{- if eq $rules "" }}{{ fail "prescanrules.rego file was not found"}}{{ end }}
-        {{- $common | indent 8}}
-        {{- $rules | indent 8}}
-{{ end }}
-        ###### Begin: Custom rules ######
-{{ .Values.customRules | indent 8 -}}
-        ###### End: Custom rules ######
+    package imageadmission
+    # Helper variables
+    namespace := input.AdmissionRequest.namespace
+    policies := data.preScanPolicies
+    {{- if .Values.preScanPolicies.autoGenerate }}
+    {{- $common := .Files.Get "commonrules.rego"}}
+    {{- if eq $common "" }}{{ fail "commonrules.rego file was not found"}}{{ end }}
+    {{- $rules := .Files.Get "prescanrules.rego"}}
+    {{- if eq $rules "" }}{{ fail "prescanrules.rego file was not found"}}{{ end }}
+    {{ $common | nindent 4 }}
+    {{- $rules | nindent 4 }}
+    {{- end }}
+    ###### Begin: Custom rules ######
+    {{ .Values.customRules | nindent 4 }}
+    ###### End: Custom rules ######

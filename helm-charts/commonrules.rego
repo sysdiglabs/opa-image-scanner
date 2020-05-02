@@ -11,7 +11,7 @@ policy_action_or_empty(policy) = action {
         action := "<empty>"
 }
 
-namespace_str(ns) = str{ 
+namespace_str(ns) = str{
         ns == true
         str := sprintf("Namespace '%s'", [namespace])
 } else = str {
@@ -65,7 +65,7 @@ config_error[msg] {
 
 # Per-Image policy computation
 
-first_matching_custom_policy(policies, image) = [c | 
+first_matching_custom_policy(policies, image) = [c |
         c := policies[_]
         startswith(image, c.prefix)
 ][0]
