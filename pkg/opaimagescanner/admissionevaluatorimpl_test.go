@@ -55,7 +55,7 @@ func (s *mockImageScanner) StartScan(imageAndTag string) (string, error) {
 	return s.StartScanReturn.Digest, s.StartScanReturn.Error
 }
 
-func (s *mockImageScanner) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {
+func (s *mockImageScanner) GetReport(imageAndTag, imageDigest, scanPolicyId string) (*imagescanner.ScanReport, error) {
 	s.GetReportCalled = true
 
 	if s.ExpectedImageAndTag != "" && s.ExpectedImageAndTag != imageAndTag {

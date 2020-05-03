@@ -30,8 +30,8 @@ func NewClient(baseUrl, secureToken string) *anchoreClient {
 
 const errNotFound = "response from Anchore: 404"
 
-func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
-	result, err := c.getReport(digest, tag)
+func (c *anchoreClient) getStatus(digest, tag string) (bool, error) {
+	result, err := c.getReport(digest, tag, "")
 
 	if err != nil {
 		return false, err
@@ -44,13 +44,18 @@ func (c *anchoreClient) getStatus(digest string, tag string) (bool, error) {
 	}
 }
 
-func (c *anchoreClient) getReport(digest string, tag string) (*ScanReport, error) {
+func (c *anchoreClient) getReport(digest, tag, policyId string) (*ScanReport, error) {
 
 	if strings.Contains(tag, "@sha256:") {
 		tag = strings.Split(tag, "@")[0] + ":by-digest-unknown-tag"
 	}
 
-	path := fmt.Sprintf("/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
+	path := ""
+	if policyId != "" {
+		path = fmt.Sprintf("/api/scanning/v1/anchore/images/%s/check?tag=%s&policyId=%s&history=false&detail=true", digest, tag, policyId)
+	} else {
+		path = fmt.Sprintf("/api/scanning/v1/anchore/images/%s/check?tag=%s&history=false&detail=true", digest, tag)
+	}
 	body, err := c.anchoreRequest(path, nil, "GET")
 
 	if err != nil && err.Error() == errNotFound {
@@ -108,7 +113,7 @@ func (c *anchoreClient) addImage(image string) (string, error) {
 
 	}
 
-	body, err := c.anchoreRequest("/images", params, "POST")
+	body, err := c.anchoreRequest("/api/scanning/v1/anchore/images", params, "POST")
 	if err != nil {
 		return "", err
 	}

@@ -1,6 +1,7 @@
 package opaimagescanner
 
 import (
+	"encoding/json"
 	"fmt"
 	"image-scan-webhook/pkg/imagescanner"
 	"image-scan-webhook/pkg/opa"
@@ -103,16 +104,22 @@ func (e *opaImageScannerEvaluator) preScanEvaluate(a *v1beta1.AdmissionRequest, 
 func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *corev1.Pod, container *corev1.Container, regoRules, data string) (accepted bool, digest string, message string) {
 
 	var report *imagescanner.ScanReport
+	var err error
 
-	digest, err := e.scanner.StartScan(container.Image)
-	if err != nil {
+	if digest, err = e.scanner.StartScan(container.Image); err != nil {
 		// TODO: Different if image not found, or cannot be started by other reasons (i.e. auth failed)
 		klog.Warningf("start scan error: %v", err)
 		report = &imagescanner.ScanReport{
 			Status:      imagescanner.StatusScanFailed,
 			ImageAndTag: container.Image,
 		}
-	} else if report, err = e.scanner.GetReport(container.Image, digest); err != nil {
+	} else if scanPolicyId, err := getContainerPolicy(a, pod, container, data); err != nil {
+		klog.Warningf("retrieve scanPolicyId error: %v", err)
+		report = &imagescanner.ScanReport{
+			Status:      imagescanner.StatusScanFailed,
+			ImageAndTag: container.Image,
+		}
+	} else if report, err = e.scanner.GetReport(container.Image, digest, scanPolicyId); err != nil {
 		klog.Warningf("get scan report error: %v", err)
 		report = &imagescanner.ScanReport{
 			Status:      imagescanner.StatusReportNotAvailable,
@@ -127,6 +134,7 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 		ContainerObject:  container,
 	}
 
+	//TODO: Pass data as interface{}
 	res, err := e.opaEvaluator.Evaluate(regoQuery, regoRules, data, opaInput)
 	denyReasons := expressions2StringList(res, err)
 
@@ -162,4 +170,34 @@ func expressions2StringList(res []opa.EvaluationResult, err error) []string {
 			return denyReasons
 		}
 	}
+}
+
+func getContainerPolicy(a *v1beta1.AdmissionRequest, pod *corev1.Pod, container *corev1.Container, data string) (string, error) {
+	parsedData, err := parseData(data)
+	if err != nil {
+		return "", err
+	}
+
+	//TODO: Get policy from namespace
+	policies, ok := parsedData["policies"].(map[string]interface{})
+	if ok {
+		scanPolicyId, ok := policies["scanPolicyId"].(string)
+		if ok {
+			return scanPolicyId, nil
+		}
+	}
+
+	return "", nil
+}
+
+func parseData(data string) (map[string]interface{}, error) {
+	klog.V(3).Infof("[rego] Data is:\n%s", data)
+	var jsonData map[string]interface{}
+
+	err := json.Unmarshal([]byte(data), &jsonData)
+	if err != nil {
+		return nil, err
+	}
+
+	return jsonData, nil
 }

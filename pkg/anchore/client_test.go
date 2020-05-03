@@ -120,7 +120,7 @@ func TestAddImage(t *testing.T) {
 		t.Fatalf("Wrong method: %s", roundTripper.RequestMethod)
 	}
 
-	if string(roundTripper.RequestPath) != `/images` {
+	if string(roundTripper.RequestPath) != `/api/scanning/v1/anchore/images` {
 		t.Fatalf("Wrong path: %s", roundTripper.RequestPath)
 	}
 
@@ -154,7 +154,7 @@ func TestGetReport(t *testing.T) {
 		}
 	}]`, 200)
 
-	_, err := client.getReport("mockDigest", "mockTag")
+	_, err := client.getReport("mockDigest", "mockTag", "")
 
 	if err != nil {
 		t.Fatalf("Error: %v", err)
@@ -168,7 +168,7 @@ func TestGetReport(t *testing.T) {
 		t.Fatalf("Wrong method: %s", roundTripper.RequestMethod)
 	}
 
-	if string(roundTripper.RequestPath) != `/images/mockDigest/check` {
+	if string(roundTripper.RequestPath) != `/api/scanning/v1/anchore/images/mockDigest/check` {
 		t.Fatalf("Wrong path: %s", roundTripper.RequestPath)
 	}
 
@@ -183,7 +183,7 @@ func TestGetReportError(t *testing.T) {
 	client := NewClient("http://mock", "mockToken")
 	client.httpClient, _ = getMockClient("", 500)
 
-	_, err := client.GetReport("mockTag", "mockDigest")
+	_, err := client.GetReport("mockTag", "mockDigest", "")
 
 	if err == nil || err.Error() != "unable to obtain scan report: response from Anchore: 500" {
 		t.Fatalf("Error: %v", err)

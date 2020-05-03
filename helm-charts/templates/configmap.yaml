@@ -5,4 +5,4 @@ metadata:
   labels:
     {{ include "sysdig-image-scanner.labels" . | nindent 4 }}
 data:
-  SYSDIG_SECURE_URL: {{ .Values.sysdigSecureApiUrl }}/api/scanning/v1/anchore
+  SYSDIG_SECURE_URL: {{ .Values.sysdigSecureApiUrl }}

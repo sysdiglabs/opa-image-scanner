@@ -17,7 +17,7 @@ func TestStartScan(t *testing.T) {
 		t.Fatalf("Wrong digest: %s", digest)
 	}
 
-	if roundTripper.RequestPath != "/images" || roundTripper.RequestMethod != "POST" {
+	if roundTripper.RequestPath != "/api/scanning/v1/anchore/images" || roundTripper.RequestMethod != "POST" {
 		t.Fatalf("Unexpected request: %s %s", roundTripper.RequestMethod, roundTripper.RequestPath)
 	}
 }
@@ -59,7 +59,7 @@ func TestIfaceGetReport(t *testing.T) {
 		}
 	}]`, 200)
 
-	_, err := client.GetReport("mockTag", "mockDigest")
+	_, err := client.GetReport("mockTag", "mockDigest", "")
 
 	if err != nil {
 		t.Fatalf("Error: %v", err)
@@ -73,7 +73,7 @@ func TestIfaceGetReport(t *testing.T) {
 		t.Fatalf("Wrong method: %s", roundTripper.RequestMethod)
 	}
 
-	if string(roundTripper.RequestPath) != `/images/mockDigest/check` {
+	if string(roundTripper.RequestPath) != `/api/scanning/v1/anchore/images/mockDigest/check` {
 		t.Fatalf("Wrong path: %s", roundTripper.RequestPath)
 	}
 

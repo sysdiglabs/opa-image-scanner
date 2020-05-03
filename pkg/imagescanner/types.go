@@ -18,7 +18,7 @@ type ScanReport struct {
 
 type Scanner interface {
 	StartScan(imageAndTag string) (string, error)
-	GetReport(imageAndTag, imageDigest string) (*ScanReport, error)
+	GetReport(imageAndTag, imageDigest, policyId string) (*ScanReport, error)
 }
 
 type ImageScannerAdmissionEvaluator interface {

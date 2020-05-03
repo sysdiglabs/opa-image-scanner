@@ -30,6 +30,8 @@ scanPolicies:
   # Default admission policy to apply: [accept | reject | scan-result]
   defaultPolicy: scan-result
 
+  scanPolicyId: policy_xxxx
+
   # What should we do if the Scan Result is not yet available (scan in progress): [accept | reject]
   reportPending: reject
 
@@ -55,6 +57,7 @@ scanPolicies:
   #  ns-prod:
   #    # All images rejected by default in this namespace
   #    defaultPolicy: reject
+  #    scanPolicyId: policy_xxxx
   #    # Images from "my-trusted-registry.com/" will be always accepted
   #    customPolicies:
   #      - prefix: "my-trusted-registry.com/"

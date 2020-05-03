@@ -18,8 +18,8 @@ func (c *anchoreClient) StartScan(imageAndTag string) (digest string, err error)
 	return
 }
 
-func (c *anchoreClient) GetReport(imageAndTag, imageDigest string) (*imagescanner.ScanReport, error) {
-	innerReport, err := c.getReport(imageDigest, imageAndTag)
+func (c *anchoreClient) GetReport(imageAndTag, imageDigest, policyId string) (*imagescanner.ScanReport, error) {
+	innerReport, err := c.getReport(imageDigest, imageAndTag, policyId)
 	if err != nil {
 		return nil, fmt.Errorf("unable to obtain scan report: %v", err)
 	}
