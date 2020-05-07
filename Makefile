@@ -1,4 +1,4 @@
-IMAGE=sysdiglabs/opa-image-scanner:local
+IMAGE=sysdig/sysdig-admission-controller:local
 
 .PHONY: build test
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## Dev 
+
+- Rebranding to sysdig-admission-controller
+- Simplified README.md move technical details to docs/Advanced.md
+
+## 2020-05-07 v0.2.0 
+
+- New pre-scan evaluation phase to make decissions before triggering image scan
+- Complete rewrite of evaluation rules
+- Include full set of automated testing for the rego rules
+
+## 2020-04-09 v0.1.2
+
+- Fix UID permission mismatch that made the container fail on some environments
+- Require sysdigSecureToken in values.yaml or fail
+
 ## 2020-04-02 v0.1.1 
 
 - Add some more debug information

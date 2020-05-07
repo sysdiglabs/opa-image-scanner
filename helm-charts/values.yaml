@@ -1,11 +1,11 @@
-# Default values for sysdig-image-scanner.
+# Default values for sysdig-admission-controller.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: sysdiglabs/opa-image-scanner
+  repository: sysdig/sysdig-admission-controller
   pullPolicy: Always
 
 service:
@@ -65,25 +65,6 @@ scanPolicies:
   #    defaultPolicy: accept
   #    customPolicies: []
 
-# Define a set of custom rego rules. If scanPolicies.autoGenerate is true, 
-# these customRules are appended to the set of generated rules. 
-# Otherwise, these customRules are the only rules definition,
-customRules: |
-      my_example_rule {
-          # Some conditions...
-          false
-      }
-
-      other_rule {
-          # Some other conditions...
-          true
-      }
-
-      deny_image["This is a custom deny message"] {
-          my_example_rule
-          other_rule
-      }
-
 preScanPolicies:
 
   autoGenerate: true
@@ -113,29 +94,11 @@ preScanPolicies:
   #     customPolicies: []
 
 
-# Define a set of custom rego rules. If preScanPolicies.autoGenerate is true, 
-# these preCustomRules are appended to the set of generated rules. 
-# Otherwise, these preCustomRules are the only rules definition,
-preCustomRules: |
-      my_example_rule {
-          # Some conditions... 
-          false
-      }
+# Define a set of post-scan custom rego rules.
+customRules: ""
 
-      other_rule {
-          # Some other conditions...
-          true
-      }
-
-      allow_pod {
-          # Put conditions in here
-          false
-      }
-
-      deny_pod["This is a custom deny message"] {
-          my_example_rule
-          other_rule
-      }
+# Define a set of pre-scan custom rego rules.
+preCustomRules: ""
 
 imagePullSecrets: []
 nameOverride: ""
