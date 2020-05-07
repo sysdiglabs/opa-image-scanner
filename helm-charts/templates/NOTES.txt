@@ -1,2 +1,1 @@
-TO-DO: Write notes
-
+Sysdig Admission Controller is now installed!
