@@ -79,7 +79,9 @@ spec:
         projected:
           sources:
             - configMap:
-                name: {{ include "sysdig-image-scanner.name" . }}-rules
+                name: {{ include "sysdig-image-scanner.name" . }}-pre-scan-rules
+            - configMap:
+                name: {{ include "sysdig-image-scanner.name" . }}-post-scan-rules
             - configMap:
                 name: {{ include "sysdig-image-scanner.name" . }}-policy
     {{- with .Values.nodeSelector }}

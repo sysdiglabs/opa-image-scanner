@@ -12,11 +12,19 @@ test: test-go test-rego
 test-go:
 	go test ./...
 
-test-rego:
-	echo "package imageadmission" > rego-test/imageadmission.rego
-	echo "policies := data.policies" >> rego-test/imageadmission.rego
-	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/imageadmission.rego
-	cat helm-charts/imageadmission.rego >> rego-test/imageadmission.rego
+prepare-tests:
+	echo "package prescanimageadmission" > rego-test/_generated_prescanrules.rego 
+	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/_generated_prescanrules.rego 
+	echo "policies := data.policies" >> rego-test/_generated_prescanrules.rego
+	cat helm-charts/commonrules.rego >> rego-test/_generated_prescanrules.rego
+	cat helm-charts/prescanrules.rego >> rego-test/_generated_prescanrules.rego
+	echo "package postscanimageadmission" > rego-test/_generated_postscanrules.rego
+	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/_generated_postscanrules.rego 
+	echo "policies := data.policies" >> rego-test/_generated_postscanrules.rego
+	cat helm-charts/commonrules.rego >> rego-test/_generated_postscanrules.rego
+	cat helm-charts/postscanrules.rego >> rego-test/_generated_postscanrules.rego
+
+test-rego: prepare-tests
 	docker run --rm -v $$(pwd)/rego-test:/tests openpolicyagent/opa:0.18.0-rootless test /tests -v
 
 cert: cert.crt secret-tls.yaml

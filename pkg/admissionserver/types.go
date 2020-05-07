@@ -1,19 +1,15 @@
 package admissionserver
 
 import (
-	"image-scan-webhook/pkg/opaimagescanner"
+	"image-scan-webhook/pkg/imagescanner"
 
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
-type admissionHook struct {
-	evaluator opaimagescanner.AdmissionEvaluator
-}
-
 type mutationHook struct {
-	evaluator opaimagescanner.AdmissionEvaluator
+	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator
 }
 
 // toAdmissionResponse is a helper function to create an AdmissionResponse

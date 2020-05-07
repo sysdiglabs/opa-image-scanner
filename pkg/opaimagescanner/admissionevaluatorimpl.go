@@ -3,54 +3,104 @@ package opaimagescanner
 import (
 	"fmt"
 	"image-scan-webhook/pkg/imagescanner"
+	"image-scan-webhook/pkg/opa"
+	"strings"
 
 	"k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/klog"
 )
 
-//Implementation of AdmissionEvaluator interface
-func (e *opaImageScannerEvaluator) Evaluate(a *v1beta1.AdmissionRequest) (accepted bool, digestMappings map[string]string, pod *corev1.Pod, errors []string) {
+//Implementation of ImageScannerAdmissionEvaluator interface
+func (e *opaImageScannerEvaluator) ScanAndEvaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod) (accepted bool, digestMappings map[string]string, errors []string) {
 
-	accepted = true
+	if a == nil {
+		return false, nil, []string{"Admission request is <nil>"}
+	}
+
+	if pod == nil {
+		return false, nil, []string{"Pod data is <nil>"}
+	}
+
 	regoRules, err := e.getOPARulesFunc()
 	if err != nil {
 		regoRules = regoDefaultRules
 	}
+
+	preScanRegoRules, err := e.getOPAPreScanRulesFunc()
+	if err != nil {
+		preScanRegoRules = regoDefaultPreScanRules
+	}
+
 	data, err := e.getOPADataFunc()
 	if err != nil {
-		return false, nil, nil, []string{err.Error()}
+		return false, nil, []string{err.Error()}
 	}
 
-	if a == nil {
-		return false, nil, nil, []string{"Admission request is <nil>"}
+	klog.Infof("Pre-scan check for admission review %s", a.UID)
+	accepted, rejected, message := e.preScanEvaluate(a, pod, preScanRegoRules, data)
+
+	if accepted {
+		klog.Infof("Pre-scan check ALLOWED pod for admission review %s", a.UID)
+		return
 	}
 
-	pod, err = getPod(a)
-	if err != nil {
-		return false, nil, nil, []string{err.Error()}
+	if rejected {
+		klog.Infof("Pre-scan check REJECTED pod for admission review %s\nReason: %s", a.UID, message)
+		accepted = false
+		errors = []string{fmt.Sprintf("Pre-scan rejected. Reasons: %s", message)}
+		return
 	}
 
+	klog.Infof("Pre-scan check admission review %s finished. Not conclusive, proceeding to scan.", a.UID)
+
+	accepted = true
 	digestMappings = make(map[string]string)
+
 	//TODO: Run in parallel and combine multiple containers output
 	for _, container := range pod.Spec.Containers {
+		klog.Infof("Scan check for admission review %s container '%s' image '%s'", a.UID, container.Name, container.Image)
 
-		klog.Infof("Checking container '%s' image '%s'", container.Name, container.Image)
-
-		containerAccepted, digest, containerErrors := e.evaluateContainer(a, pod, &container, regoRules, data)
+		containerAccepted, digest, message := e.evaluateContainer(a, pod, &container, regoRules, data)
 		digestMappings[container.Image] = digest
-		if !containerAccepted {
+		if containerAccepted {
+			klog.Infof("Scan check for admission review %s ALLOWED container '%s' image '%s'", a.UID, container.Name, container.Image)
+		} else {
+			klog.Infof("Scan check for admission review %s REJECTED container '%s' image '%s' \nReason: %s", a.UID, container.Name, container.Image, message)
 			accepted = false
-			errors = append(errors, containerErrors...)
+			errors = append(errors, fmt.Sprintf("Image '%s' for container '%s' failed scan policy check: %s", container.Image, container.Name, message))
 		}
 	}
 
 	return
-
 }
 
-func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *v1.Pod, container *v1.Container, regoRules, data string) (accepted bool, digest string, errors []string) {
+func (e *opaImageScannerEvaluator) preScanEvaluate(a *v1beta1.AdmissionRequest, pod *corev1.Pod, preScanRegoRules, data string) (accepted, rejected bool, message string) {
+	opaInput := OPAInput{
+		ScanReport:       nil,
+		AdmissionRequest: a,
+		PodObject:        pod,
+		ContainerObject:  nil,
+	}
+
+	//TODO: include msg in pre_allow_image?
+	if res, err := e.opaEvaluator.Evaluate(regoPreScanAllowQuery, preScanRegoRules, data, opaInput); err != nil {
+		return false, true, err.Error()
+	} else if len(res) > 0 {
+		return true, false, ""
+	}
+
+	res, err := e.opaEvaluator.Evaluate(regoPreScanRejectQuery, preScanRegoRules, data, opaInput)
+	denyReasons := expressions2StringList(res, err)
+
+	if denyReasons != nil {
+		return false, true, strings.Join(denyReasons, ", ")
+	}
+
+	return false, false, ""
+}
+
+func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest, pod *corev1.Pod, container *corev1.Container, regoRules, data string) (accepted bool, digest string, message string) {
 
 	var report *imagescanner.ScanReport
 
@@ -77,29 +127,39 @@ func (e *opaImageScannerEvaluator) evaluateContainer(a *v1beta1.AdmissionRequest
 		ContainerObject:  container,
 	}
 
-	if err := e.opaEvaluator.Evaluate(regoQuery, regoRules, data, opaInput); err != nil {
-		return false, digest, []string{fmt.Sprintf("image '%s' for container '%s' failed policy check\nError: %v", container.Image, container.Name, err)}
+	res, err := e.opaEvaluator.Evaluate(regoQuery, regoRules, data, opaInput)
+	denyReasons := expressions2StringList(res, err)
+
+	if denyReasons != nil {
+		return false, digest, strings.Join(denyReasons, ", ")
 	}
 
-	return true, digest, nil
+	return true, digest, ""
 
 }
 
-func getPod(a *v1beta1.AdmissionRequest) (*corev1.Pod, error) {
+func expressions2StringList(res []opa.EvaluationResult, err error) []string {
+	if err != nil {
+		return []string{fmt.Sprintf("Evaluation error: %s", err)}
+	} else if len(res) != 1 || len(res[0]) != 1 {
+		return []string{fmt.Sprintf("Evaluation error - unexpected result length: %s", res)}
+	} else {
+		if expressionList, ok := res[0][0].Value.([]interface{}); !ok {
+			return []string{fmt.Sprintf("Evaluation error - unexpected expression type: %T - value: %s", res[0][0].Value, res[0][0].Value)}
+		} else if len(expressionList) == 0 {
+			return nil
+		} else {
 
-	raw := a.Object.Raw
+			denyReasons := make([]string, len(expressionList))
+			for i := range expressionList {
+				var ok bool
+				denyReasons[i], ok = expressionList[i].(string)
+				if !ok {
+					return []string{fmt.Sprintf("Evaluation error - unexpected value type: %T - value: %s", expressionList[i], expressionList[i])}
+				}
+			}
 
-	if raw == nil {
-		return nil, fmt.Errorf("Pod data is <nil>")
+			return denyReasons
+		}
 	}
-
-	pod := corev1.Pod{}
-	deserializer := codecs.UniversalDeserializer()
-	if _, schema, err := deserializer.Decode(raw, nil, &pod); err != nil {
-		return nil, err
-	} else if schema == nil {
-		return nil, fmt.Errorf("Could not find a schema")
-	}
-
-	return &pod, nil
 }

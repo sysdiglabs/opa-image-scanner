@@ -29,7 +29,7 @@ func (m *mutationHook) MutatingResource() (plural schema.GroupVersionResource, s
 
 func (m *mutationHook) Admit(admissionSpec *v1beta1.AdmissionRequest) *v1beta1.AdmissionResponse {
 	klog.Info("[mutation-server] Validating Pod admission request")
-	response, digestMapping, pod := Evaluate(admissionSpec, m.evaluator)
+	response, digestMapping, pod := Evaluate(admissionSpec, m.imageScannerEvaluator)
 
 	p := v1beta1.PatchType("JSONPatch")
 	response.PatchType = &p
@@ -43,7 +43,6 @@ func buildJSONPatch(pod *corev1.Pod, digestMapping map[string]string) string {
 
 	if pod == nil {
 		return "[]"
-
 	}
 
 	var sb strings.Builder

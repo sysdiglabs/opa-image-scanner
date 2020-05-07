@@ -31,7 +31,8 @@ import (
 	"image-scan-webhook/pkg/opaimagescanner"
 )
 
-const opaRulesFile = "/config/rules.rego"
+const opaRulesFile = "/config/post-scan-rules.rego"
+const opaPreScanRulesFile = "/config/pre-scan-rules.rego"
 const policiesFile = "/config/policy.json"
 
 var imageScanner imagescanner.Scanner
@@ -53,26 +54,30 @@ func init() {
 	opaEvaluator = opa.NewEvaluator()
 }
 
-func getOPAData() (string, error) {
-	dataFileContents, err := ioutil.ReadFile(policiesFile)
+func getFileContent(filePath string) (string, error) {
+	fileContents, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return "", err
 	} else {
-		return string(dataFileContents), nil
+		return string(fileContents), nil
 	}
 }
 
+func getOPAData() (string, error) {
+	return getFileContent(policiesFile)
+}
+
 func getOPARules() (string, error) {
-	regoFileContents, err := ioutil.ReadFile(opaRulesFile)
-	if err != nil {
-		return "", err
-	} else {
-		return string(regoFileContents), nil
-	}
+	return getFileContent(opaRulesFile)
+}
+
+func getOPAPreScanRules() (string, error) {
+	return getFileContent(opaPreScanRulesFile)
 }
 
 func main() {
 	klog.Infof("Starting AdmissionServer...")
-	admissionserver.Run(opaimagescanner.NewEvaluator(imageScanner, opaEvaluator, getOPARules, getOPAData))
+	admissionserver.Run(
+		opaimagescanner.NewImageScannerEvaluator(imageScanner, opaEvaluator, getOPARules, getOPAPreScanRules, getOPAData))
 	klog.Info("Exiting...")
 }

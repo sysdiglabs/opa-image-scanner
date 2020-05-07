@@ -2,11 +2,11 @@ package admissionserver
 
 import (
 	"fmt"
+	"image-scan-webhook/pkg/imagescanner"
 
 	"k8s.io/api/admission/v1beta1"
 	"k8s.io/klog"
 
-	"image-scan-webhook/pkg/opaimagescanner"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e opaimagescanner.AdmissionEvaluator) (*v1beta1.AdmissionResponse, map[string]string, *corev1.Pod) {
+func Evaluate(
+	admissionSpec *v1beta1.AdmissionRequest,
+	imageScannerEvaluator imagescanner.ImageScannerAdmissionEvaluator,
+) (response *v1beta1.AdmissionResponse, digestMappings map[string]string, pod *corev1.Pod) {
 
 	if err := validatePod(admissionSpec); err != nil {
 		klog.Errorf("[admission-server] %v", err)
@@ -25,9 +28,12 @@ func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e opaimagescanner.Admissi
 		if podName == "" {
 			podName = "<Not yet generated>"
 		}
-		klog.Infof("[admission-server] Admission review %s - evaluating admission of pod '%s'", admissionSpec.UID, podName)
 
-		allowed, digestMappings, pod, denyReasons := e.Evaluate(admissionSpec)
+		pod, err := getPod(admissionSpec)
+		if err != nil {
+			klog.Errorf("[admission-server] %v", err)
+			return toAdmissionResponse(admissionSpec.UID, err), nil, nil
+		}
 
 		if pod != nil {
 			if pod.Name != "" {
@@ -37,7 +43,9 @@ func Evaluate(admissionSpec *v1beta1.AdmissionRequest, e opaimagescanner.Admissi
 			}
 		}
 
-		klog.Infof("[admission-server] Admission review %s - finished evaluating admission of pod '%s'", admissionSpec.UID, podName)
+		klog.Infof("[admission-server] Admission review %s - Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
+		allowed, digestMappings, denyReasons := imageScannerEvaluator.ScanAndEvaluate(admissionSpec, pod)
+		klog.Infof("[admission-server] Admission review %s - finished Image Scanner evaluation of pod '%s'", admissionSpec.UID, podName)
 
 		if allowed {
 			klog.Infof("[admission-server] Admission review %s - pod '%s' accepted", admissionSpec.UID, podName)
@@ -66,4 +74,23 @@ func validatePod(admissionSpec *v1beta1.AdmissionRequest) error {
 	}
 
 	return nil
+}
+
+func getPod(a *v1beta1.AdmissionRequest) (*corev1.Pod, error) {
+
+	raw := a.Object.Raw
+
+	if raw == nil {
+		return nil, fmt.Errorf("Pod data is <nil>")
+	}
+
+	pod := corev1.Pod{}
+	deserializer := codecs.UniversalDeserializer()
+	if _, schema, err := deserializer.Decode(raw, nil, &pod); err != nil {
+		return nil, err
+	} else if schema == nil {
+		return nil, fmt.Errorf("Could not find a schema")
+	}
+
+	return &pod, nil
 }
