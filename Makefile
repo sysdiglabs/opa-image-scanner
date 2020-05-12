@@ -1,4 +1,4 @@
-IMAGE=sysdig/sysdig-admission-controller:local
+IMAGE=sysdiglabs/sysdig-admission-controller:local
 
 .PHONY: build test
 

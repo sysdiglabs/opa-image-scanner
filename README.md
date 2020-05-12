@@ -9,7 +9,7 @@ Table of contents:
 
 ## Overview
 
-Sysdig’s Admission Controller combines Sysdig Secure image scanner with the rego policy-based language to evaluate the scan results and the admission context, providing great flexibility on the admission decision.
+Sysdig’s Admission Controller combines Sysdig Secure image scanner with the rego based policy language to evaluate the scan results and the admission context, providing great flexibility on the admission decision.
 
 Using native Kubernetes API extensions to perform the image scanning on admission enables major threat prevention and hardening use case: “Only the images that are explicitly approved will be allowed to run on your cluster”. 
 
@@ -59,10 +59,10 @@ The first version requires directly managing and applying YAMLS using kubectl, d
 
 ### Future milestones
 
-* Improve *how to demo* by providing some additional examples or automations (maybe a Jenkisn job)
-* Publish helm charts in our own helm chart repository and provide instructions to install from there, no need to clone the github repo
+* Improve *how to demo* by providing some additional examples or automations (maybe a Jenkins job)
+* Publish helm charts in our own helm chart repository and provide instructions to install from there, no need to clone the Github repo
 * Integrate the admission controller with the Sysdig Secure UI: mock https://jsfiddle.net/airadier/uh2jk94n/
-* Create an API to ssync the admission controller components with the configuration stored in Sysdig Secure
+* Create an API to sync the admission controller components with the configuration stored in Sysdig Secure
 * Integrate with Node Image Analyzer to trigger inline scan before the pod is accepted
 * Integrate admission controller events with Sysdig Secure Event Feed
 
@@ -72,18 +72,96 @@ The first version requires directly managing and applying YAMLS using kubectl, d
 
 ## Installation
 
-TODO: Helm charts will be available in a public repository soon.
+Create a values.yaml overriding the desired values from the [values.yaml file in the repository](https://github.com/draios/sysdig-admission-controller/blob/master/helm-charts/values.yaml):
 
-Use the helm charts available in this repository, folder `helm-charts`.
+```yaml
+# Uncomment the following line and set URL for On-Prem
+# sysdigSecureApiUrl: https://HOSTNAME
+# Put your <Sysdig-Secure-Secret-Token> in this value
+sysdigSecureToken: xxxx-xxxxx-xxx
 
-Customize the settings in the values.yaml file, create the namespace and deploy using Helm 3.
+#Set to true to increase verbosity and output OPA input and rules in the log
+verboseLog: false
 
-The **sysdigSecureToken** value is mandatory.
+scanPolicies:
+
+  # If set to "true", a default set of rules will be generated from this YAML values.
+  # Otherwise, no rules will be generated, and only "customRules" below will apply
+  autoGenerate: true
+
+  # Default admission policy to apply: [accept | reject | scan-result]
+  defaultPolicy: scan-result
+
+  # What should we do if the Scan Result is not yet available (scan in progress): [accept | reject]
+  reportPending: reject
+
+  # What should we do if the Scan has failed (wrong credentials, misconfiguration, etc.): [accept | reject]
+  scanFailed: reject
+
+  # customPolicies:
+  #   - prefix: "my.totally-trusted-registry.com/"
+  #     action: accept
+  #   - prefix: "bad-registry.com/specific-repo/"
+  #     action: scan-result
+  #   - prefix: "bad-registry.com/"
+  #     action: reject
+  #   - prefix: "malware-registry.io/"
+  #     action: reject
+
+
+  byNamespace: {}
+  # byNamespace:
+  #  ns-dev:
+  #    # By default, images will be accepted in this NS regardless of the scan result
+  #    defaultPolicy: accept
+  #  ns-prod:
+  #    # All images rejected by default in this namespace
+  #    defaultPolicy: reject
+  #    # Images from "my-trusted-registry.com/" will be always accepted
+  #    customPolicies:
+  #      - prefix: "my-trusted-registry.com/"
+  #        action: accept
+  #      - prefix: "docker.io/"
+  #        action: scan-result
+  #  ns-playground:
+  #    defaultPolicy: accept
+  #    customPolicies: []
+
+preScanPolicies:
+
+  autoGenerate: true
+
+  defaultPolicy: accept
+
+  # customPolicies:
+  #   - prefix: "my.totally-trusted-registry.com/"
+  #     action: accept
+  #   - prefix: "bad-registry.com/specific-repo/"
+  #     action: scan
+  #   - prefix: "bad-registry.com/"
+  #     action: reject
+  #   - prefix: "malware-registry.io/"
+  #     action: reject
+  
+  byNamespace:
+    ns-prod:
+      defaultPolicy: accept
+      customPolicies:
+        - prefix: "docker.io/"
+          action: scan
 
 ```
-$ cd helm-charts
+The **sysdigSecureToken** value is mandatory, but if the defaults are ok for you, all other settings are optional. 
+
+In this example values.yaml we accept all images by default in *preScanPolicies*, but we force images coming from docker.io/ in *ns-prod* namespace to be scanned. Then in *scanPolicies* we rely on the scan-result of the image to admit or deny the pod admission.
+
+Once the values.yaml is ready, just create the namespace and deploy using Helm 3, adding the sysdiglabs Helm Chart repository.
+
+
+```
 $ kubectl create ns sysdig-admission-controller
-$ helm install -n sysdig-admission-controller sysdig-admission-controller . 
+$ helm repo add sysdiglabs https://sysdiglabs.github.io/charts/
+$ helm install -n sysdig-admission-controller sysdig-admission-controller -f values.yaml sysdiglabs/sysdig-admission-controller
 ```
 
 After a few seconds, this chart will deploy all the required components:
@@ -93,7 +171,7 @@ After a few seconds, this chart will deploy all the required components:
  * Required service account, TLS certificates, roles and permissions.
  * Configmaps, including *sysdig-admission-controller-policy* to store the policy configuration.
 
-### Customize the settings
+### Basic settings
 
 The default settings in *values.yaml* should be right for most cases, but you need to provide at least:
 
@@ -174,7 +252,7 @@ scanPolicies:
 
 *autoGenerate* value must be *true*.
 
-Similar to the *preScanRules* section, we can define a general *defaultPolicy* behavior. **scan-result** in the example means that the decission will depend on the image scanning report result. We override this in the *ns-playground* namespace to always *accept* images (although they will be scanned, and the scan report could be *failed*), and then in *ns-prod* to *reject* by default.
+Similar to the *preScanRules* section, we can define a general *defaultPolicy* behavior. **scan-result** in the example means that the decision will depend on the image scanning report result. We override this in the *ns-playground* namespace to always *accept* images (although they will be scanned, and the scan report could be *failed*), and then in *ns-prod* to *reject* by default.
 
 We can also define *customPolicies* for specific registries, repositories and tags. In the example we always *accept* images coming from *my-totally-trusted-registry.com*, and we always *reject* images coming from *bad-registry.com/*. We override the behavior in *ns-playground* by defining an empty list of *customPolicies* (so **all** images are always accepted), and for *ns-prod* namespace we override the *customPolicies* to also force evaluation of the scan report for images coming from *docker.io/*.
 

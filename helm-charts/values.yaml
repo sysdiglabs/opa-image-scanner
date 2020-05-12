@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: sysdig/sysdig-admission-controller
+  repository: sysdiglabs/sysdig-admission-controller
   pullPolicy: Always
 
 service:
