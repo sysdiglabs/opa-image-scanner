@@ -41,6 +41,13 @@ spec:
             runAsNonRoot: true
             runAsUser: 65532
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.httpProxy }}
+          env:
+            - name: HTTP_PROXY
+              value: {{ .Values.httpProxy }}
+            - name: NO_PROXY
+              value: {{ .Values.noProxy }} 
+          {{- end }}
           envFrom:
             - configMapRef:
                 name: image-scan-config

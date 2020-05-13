@@ -21,6 +21,7 @@ func NewClient(baseUrl, secureToken string) *anchoreClient {
 		httpClient: &http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ignore expired SSL certificates
+				Proxy:           http.ProxyFromEnvironment,
 			},
 		},
 	}

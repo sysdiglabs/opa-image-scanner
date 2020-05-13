@@ -1,5 +1,9 @@
 # Changelog
 
+## 2020-05-13 Charts v1.0.3, app v1.0.1
+
+- Add proxy support
+
 ## 2020-05-13 Charts v1.0.1, app v1.0.0
 
 - Fix: use object namespace instead of AdmissionReview namespace for evaluation 
