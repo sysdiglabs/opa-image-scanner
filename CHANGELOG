@@ -1,10 +1,14 @@
 # Changelog
 
-## 2020-05-07 v0.2.0 
+## 2020-05-13 Charts v1.1.1, app v0.2.0
 
-- New pre-scan evaluation phase to make decissions before triggering image scan
+- Fix: use object namespace instead of AdmissionReview namespace for evaluation 
+
+## 2020-05-07 Charts v1.0.0, app v0.2.0 
+
+- New pre-scan evaluation phase to make decisions before triggering image scan
 - Complete rewrite of evaluation rules
-- Include full set of automated testing for the rego rules
+- Include a full set of automated testing for the rego rules
 
 ## 2020-04-09 v0.1.2
 

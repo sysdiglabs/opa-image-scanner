@@ -14,12 +14,10 @@ test-go:
 
 prepare-tests:
 	echo "package prescanimageadmission" > rego-test/_generated_prescanrules.rego 
-	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/_generated_prescanrules.rego 
 	echo "policies := data.policies" >> rego-test/_generated_prescanrules.rego
 	cat helm-charts/commonrules.rego >> rego-test/_generated_prescanrules.rego
 	cat helm-charts/prescanrules.rego >> rego-test/_generated_prescanrules.rego
 	echo "package postscanimageadmission" > rego-test/_generated_postscanrules.rego
-	echo "namespace := input.AdmissionRequest.namespace" >> rego-test/_generated_postscanrules.rego 
 	echo "policies := data.policies" >> rego-test/_generated_postscanrules.rego
 	cat helm-charts/commonrules.rego >> rego-test/_generated_postscanrules.rego
 	cat helm-charts/postscanrules.rego >> rego-test/_generated_postscanrules.rego

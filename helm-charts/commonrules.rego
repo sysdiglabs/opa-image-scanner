@@ -2,6 +2,8 @@
 # Common rules
 ##############################
 
+namespace := input.AdmissionRequest.object.metadata.namespace
+
 ##############################
 # helper functions
 
