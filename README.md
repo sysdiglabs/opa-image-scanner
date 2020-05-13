@@ -102,7 +102,7 @@ preScanPolicies:
       customPolicies: []
 ```
 
-Setting the *autoGenerate* value to true will automatically generate some OPA rules for the evaluation engine that make pre-scan decissions based on the values of this section. If *autoGenerate* is set to false, the following does not apply. See [Evaluation Engine](#evaluation-engine) for more information.
+Setting the *autoGenerate* value to true will automatically generate some OPA rules for the evaluation engine that make pre-scan decisions based on the values of this section. If *autoGenerate* is set to false, the following does not apply. See [Evaluation Engine](#evaluation-engine) for more information.
 
 In this example we set the *defaultPolicy* to *scan*, so by default, in any namespace, images would be scanned. Then, for namespace *playground* we override the *defaultPolicy* to *accept* all images by default.
 
@@ -145,9 +145,9 @@ scanPolicies:
       customPolicies: []
 ```
 
-Again, the *autoGenerate* value enables generation of some OPA rules for post-scan decissions. The settings on this section will have no effect otherwise. See [Evaluation Engine](#evaluation-engine) for more information.
+Again, the *autoGenerate* value enables generation of some OPA rules for post-scan decisions. The settings on this section will have no effect otherwise. See [Evaluation Engine](#evaluation-engine) for more information.
 
-Similar to the *preScanRules* section, we can define a general *defaultPolicy* behavior. **scan-result** in the example menas that the decission will depend on the image scanning report result. We override this in the *ns-playground* namespace to always *accept* images (although they will be scanned, and the scan report could be *failed*), and then in *ns-prod* to *reject* by default.
+Similar to the *preScanRules* section, we can define a general *defaultPolicy* behavior. **scan-result** in the example means that the decision will depend on the image scanning report result. We override this in the *ns-playground* namespace to always *accept* images (although they will be scanned, and the scan report could be *failed*), and then in *ns-prod* to *reject* by default.
 
 We can also define *customPolicies* for specific registries, repositories and tags. In the example we always *accept* images coming from *my-totally-trusted-registry.com*, and we always *reject* images coming from *bad-registry.com/*. We override the behavior in *ns-playground* by defining an empty list of *customPolicies* (so **all** images are always accepted), and for *ns-prod* namespace we override the *customPolicies* to also force evaluation of the scan report for images coming from *docker.io/*.
 
