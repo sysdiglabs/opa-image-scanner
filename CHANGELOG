@@ -1,6 +1,10 @@
 # Changelog
 
-## Dev 
+## 2020-05-13 Charts v1.0.1, app v1.0.0
+
+- Fix: use object namespace instead of AdmissionReview namespace for evaluation 
+
+## 2020-05-12 Chart v1.0.0, app v1.0.0
 
 - Rebranding to sysdig-admission-controller
 - Simplified README.md move technical details to docs/Advanced.md

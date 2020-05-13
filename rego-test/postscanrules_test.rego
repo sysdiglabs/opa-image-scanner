@@ -5,7 +5,7 @@ package postscanimageadmission
 
 input_example_ns_scan_rejected := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -27,7 +27,7 @@ input_example_ns_scan_rejected := {
 
 input_example_ns_scan_accepted := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -49,7 +49,7 @@ input_example_ns_scan_accepted := {
 
 input_example_ns_scan_wrongreport := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -71,7 +71,7 @@ input_example_ns_scan_wrongreport := {
 
 input_example_ns_scan_pending := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -94,7 +94,7 @@ input_example_ns_scan_pending := {
 
 input_example_ns_scan_failed := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"

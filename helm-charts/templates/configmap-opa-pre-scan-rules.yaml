@@ -8,7 +8,6 @@ data:
   pre-scan-rules.rego: |
     package imageadmission
     # Helper variables
-    namespace := input.AdmissionRequest.namespace
     policies := data.preScanPolicies
     {{- if .Values.preScanPolicies.autoGenerate }}
     {{- $common := .Files.Get "commonrules.rego"}}

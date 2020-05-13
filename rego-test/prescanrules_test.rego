@@ -5,7 +5,7 @@ package prescanimageadmission
 
 input_example_ns := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -23,7 +23,7 @@ input_example_ns := {
 
 input_example_multiple_images := {
     "AdmissionRequest": {
-        "namespace": "example",
+        "namespace": "irrelevant",
         "object": {
             "metadata": {
                 "namespace": "example"
