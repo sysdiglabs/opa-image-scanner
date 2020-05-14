@@ -1,5 +1,10 @@
 # Changelog
 
+## 2020-05-14 Charts v1.1.2 app v0.2.1
+
+- Add proxy support
+- Fix glitch in namespace evaluation. Namespace can be in the object, or in the AdmissionReview (and object namespace be blank in that case)
+
 ## 2020-05-13 Charts v1.1.1, app v0.2.0
 
 - Fix: use object namespace instead of AdmissionReview namespace for evaluation 

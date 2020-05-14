@@ -23,10 +23,9 @@ input_example_ns := {
 
 input_example_multiple_images := {
     "AdmissionRequest": {
-        "namespace": "irrelevant",
+        "namespace": "example",
         "object": {
             "metadata": {
-                "namespace": "example"
             },
             "spec": {
                 "containers": [

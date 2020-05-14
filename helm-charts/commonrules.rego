@@ -2,7 +2,11 @@
 # Common rules
 ##############################
 
-namespace := input.AdmissionRequest.object.metadata.namespace
+namespace = n { 
+        n := input.AdmissionRequest.object.metadata.namespace
+} else = n {
+        n := input.AdmissionRequest.namespace
+}
 
 ##############################
 # helper functions

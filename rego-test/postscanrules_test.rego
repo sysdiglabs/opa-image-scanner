@@ -27,10 +27,9 @@ input_example_ns_scan_rejected := {
 
 input_example_ns_scan_accepted := {
     "AdmissionRequest": {
-        "namespace": "irrelevant",
+        "namespace": "example",
         "object": {
             "metadata": {
-                "namespace": "example"
             },
             "spec": {
                 "containers": [
@@ -49,7 +48,7 @@ input_example_ns_scan_accepted := {
 
 input_example_ns_scan_wrongreport := {
     "AdmissionRequest": {
-        "namespace": "irrelevant",
+        "namespace": "example",
         "object": {
             "metadata": {
                 "namespace": "example"
@@ -71,10 +70,9 @@ input_example_ns_scan_wrongreport := {
 
 input_example_ns_scan_pending := {
     "AdmissionRequest": {
-        "namespace": "irrelevant",
+        "namespace": "example",
         "object": {
             "metadata": {
-                "namespace": "example"
             },
             "spec": {
                 "containers": [

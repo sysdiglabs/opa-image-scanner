@@ -2,5 +2,8 @@ apiVersion: v2
 name: opa-image-scanner
 description: Sysdig image scanner using Kubernetes admission controller + OPA
 type: application
-version: 1.1.1
-appVersion: 0.2.0
+version: 1.1.2
+appVersion: 0.2.1
+maintainers:
+  - name: airadier
+    email: alvaro.iradier@sysdig.com
