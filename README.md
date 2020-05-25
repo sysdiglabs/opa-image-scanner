@@ -1,7 +1,14 @@
 # OPA Image Scanner admission controller
 ![CircleCI](https://circleci.com/gh/sysdiglabs/opa-image-scanner.svg?style=svg) ![last commit](https://flat.badgen.net/github/last-commit/airadier/image-scan-webhook?icon=github) ![license](https://flat.badgen.net/github/license/airadier/cloud-native-security-hub)
 
-Table of contents:
+Find the helm charts and installation instructions for the Sysdig Admission Controller at:
+
+https://sysdiglabs.github.io/sysdig-admission-controller/
+
+See or blog post [Performing Image Scanning on Admission Controller with OPA](https://sysdig.com/blog/image-scanning-admission-controller/)
+
+## Table of contents:
+
 * [Overview](#overview)
 * [Installation](#installation)
 * [Evaluation Engine](#evaluation-engine)
