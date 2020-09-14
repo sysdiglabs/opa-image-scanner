@@ -1,11 +1,12 @@
 # OPA Image Scanner admission controller
 ![CircleCI](https://circleci.com/gh/sysdiglabs/opa-image-scanner.svg?style=svg) ![last commit](https://flat.badgen.net/github/last-commit/airadier/image-scan-webhook?icon=github) ![license](https://flat.badgen.net/github/license/airadier/cloud-native-security-hub)
 
-Find the helm charts and installation instructions for the Sysdig Admission Controller at:
-
-https://sysdiglabs.github.io/sysdig-admission-controller/
-
-See or blog post [Performing Image Scanning on Admission Controller with OPA](https://sysdig.com/blog/image-scanning-admission-controller/)
+> **_NOTE_**
+> 
+> This repository contains the open-source version of our OPA Image Scanner admission controller.
+> 
+> For the commercially supported version of the Sysdig Admission Controller, which includes additional features, check the official documentation,
+> Helm charts, installation and usage instructions at https://sysdiglabs.github.io/sysdig-admission-controller/ 
 
 ## Table of contents:
 
@@ -17,6 +18,8 @@ See or blog post [Performing Image Scanning on Admission Controller with OPA](ht
 ## Overview
 
 Sysdig’s OPA Image Scanner combines Sysdig Secure image scanner with OPA policy-based rego language to evaluate the scan results and the admission context, providing great flexibility on the admission decision.
+
+See or blog post [Performing Image Scanning on Admission Controller with OPA](https://sysdig.com/blog/image-scanning-admission-controller/)
 
 If you are already using an image scanner, you might be already aware of some limitations. As you need to explicitly configure the set of scanned images, you might miss some images that end up running in your cluster, or end up scanning images that are never run. Additionally, the image scanner has limited information about the image it is scanning: only registry, image name and tag. With such a narrow context, it is not possible to make more advanced decisions. Do you need a “dev” namespace with more permissive rules, and a very restrictive production one that only allows images from a trusted registry and no vulnerabilities?
 
