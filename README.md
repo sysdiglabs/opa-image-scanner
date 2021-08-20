@@ -6,7 +6,7 @@
 > This repository contains the open-source version of our OPA Image Scanner admission controller.
 > 
 > For the commercially supported version of the Sysdig Admission Controller, which includes additional features, check the official documentation,
-> Helm charts, installation and usage instructions at https://sysdiglabs.github.io/sysdig-admission-controller/ 
+> Helm charts, installation and usage instructions at https://sysdiglabs.github.io/admission-controller/
 
 ## Table of contents:
 
